@@ -1,0 +1,123 @@
+:host {
+  --primary-color: #2563EB;
+  --secondary-color: #F97316;
+  --bg-light: #FFFFFF;
+  --bg-dark: #0F172A;
+  --text-slate-900: #0f172a;
+  --text-slate-500: #64748b;
+  --text-slate-400: #94a3b8;
+}
+
+.splash-container {
+  position: relative;
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.brand-content {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.animate-brand {
+  animation: fadeInScale 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.logo-wrapper {
+  margin-bottom: 32px;
+}
+
+.brand-logo {
+  height: 80px;
+  width: 100px;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.05));
+}
+
+.brand-title {
+  font-size: 2.25rem;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  color: var(--text-slate-900);
+  margin: 16px 0 4px;
+
+  @media (prefers-color-scheme: dark) {
+    color: #000000;
+  }
+}
+
+.brand-subtitle {
+  font-size: 1.125rem;
+  font-weight: 500;
+  color: var(--text-slate-500);
+  letter-spacing: 0.025em;
+  margin: 0;
+
+  @media (prefers-color-scheme: dark) {
+    color: var(--text-slate-400);
+  }
+}
+
+.loading-container {
+  margin-top: 48px;
+}
+
+.loading-track {
+  width: 48px;
+  height: 4px;
+  background: #f1f5f9;
+  border-radius: 9999px;
+  overflow: hidden;
+
+  @media (prefers-color-scheme: dark) {
+    background: #1e293b;
+  }
+}
+
+.loading-bar {
+  height: 100%;
+  width: 33.333333%;
+  background: var(--primary-color);
+  border-radius: 9999px;
+  animation: loading 1.5s infinite ease-in-out;
+}
+
+.footer {
+  position: absolute;
+  bottom: 48px;
+  left: 0;
+  right: 0;
+  text-align: center;
+}
+
+.footer-text {
+  font-size: 0.75rem;
+  color: var(--text-slate-400);
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  font-weight: 700;
+  margin: 0;
+
+  @media (prefers-color-scheme: dark) {
+    color: #475569;
+  }
+}
+
+@keyframes fadeInScale {
+  0% { opacity: 0; transform: scale(0.95); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes loading {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(300%); }
+}

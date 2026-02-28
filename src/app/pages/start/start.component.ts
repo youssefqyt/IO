@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { IonicModule } from '@ionic/angular';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-start',
@@ -10,8 +11,12 @@ import { IonicModule } from '@ionic/angular';
 })
 export class StartComponent  implements OnInit {
 
-  constructor() { }
+  constructor(private router: Router) { }
 
-  ngOnInit() {}
+  ngOnInit() {
+    setTimeout(() => {
+      this.router.navigate(['/interest-start']);
+    }, 3000);
+  }
 
 }

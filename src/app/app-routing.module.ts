@@ -15,6 +15,10 @@ const routes: Routes = [
     loadComponent: () => import('./pages/start/start.component').then(m => m.StartComponent)
   },
   {
+    path: 'interest-start',
+    loadComponent: () => import('./pages/interest_start/interest_start.page').then(m => m.InterestStartPage)
+  },
+  {
     path: '',
     redirectTo: 'start',
     pathMatch: 'full'

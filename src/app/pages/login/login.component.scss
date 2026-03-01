@@ -1,0 +1,26 @@
+
+ion-content {
+  --background: transparent;
+}
+
+ion-item {
+  --background: transparent;
+  --padding-start: 0;
+  --inner-padding-end: 0;
+  --border-radius: 0.75rem;
+
+  ion-input {
+    --padding-start: 1rem;
+    --padding-end: 1rem;
+    --padding-top: 0.875rem;
+    --padding-bottom: 0.875rem;
+  }
+}
+
+.ios-input-shadow {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+:host {
+  display: block;
+}

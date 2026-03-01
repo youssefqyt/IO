@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
 
 @Component({
@@ -8,5 +8,11 @@ import { Router } from '@angular/router';
   standalone: false,
 })
 export class AppComponent {
-  constructor(public router: Router) {}
+  public router = inject(Router);
+  constructor() {}
+
+  showNavbar(): boolean {
+    const hiddenRoutes = ['/', '/start', '/login', '/sign'];
+    return !hiddenRoutes.includes(this.router.url);
+  }
 }

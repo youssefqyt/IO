@@ -1,0 +1,33 @@
+<nav class="fixed bottom-0 left-0 right-0 bg-white dark:bg-background-dark border-t border-slate-100 dark:border-slate-800 ios-bottom-inset z-50">
+  <div class="flex justify-between items-center px-2 py-3">
+    <button routerLink="/home" class="flex flex-col items-center justify-center flex-1 transition-colors"
+      [class.text-primary]="isActive('/home')" [class.text-slate-400]="!isActive('/home')" [class.dark:text-slate-500]="!isActive('/home')">
+      <span class="material-symbols-outlined text-[26px]" [style.font-variation-settings]="isActive('/home') ? 'FILL 1' : 'FILL 0'">home</span>
+      <span class="text-[10px] mt-1 font-medium" [class.font-bold]="isActive('/home')">Home</span>
+    </button>
+
+    <button routerLink="/market" class="flex flex-col items-center justify-center flex-1 transition-colors"
+      [class.text-primary]="isActive('/market')" [class.text-slate-400]="!isActive('/market')" [class.dark:text-slate-500]="!isActive('/market')">
+      <span class="material-symbols-outlined text-[26px]" [style.font-variation-settings]="isActive('/market') ? 'FILL 1' : 'FILL 0'">storefront</span>
+      <span class="text-[10px] mt-1 font-medium" [class.font-bold]="isActive('/market')">Market</span>
+    </button>
+
+    <button routerLink="/message" class="flex flex-col items-center justify-center flex-1 transition-colors"
+      [class.text-primary]="isActive('/message')" [class.text-slate-400]="!isActive('/message')" [class.dark:text-slate-500]="!isActive('/message')">
+      <span class="material-symbols-outlined text-[26px]" [style.font-variation-settings]="isActive('/message') ? 'FILL 1' : 'FILL 0'">chat_bubble</span>
+      <span class="text-[10px] mt-1 font-medium" [class.font-bold]="isActive('/message')">Message</span>
+    </button>
+
+    <button routerLink="/myjob" class="flex flex-col items-center justify-center flex-1 transition-colors"
+      [class.text-primary]="isActive('/myjob')" [class.text-slate-400]="!isActive('/myjob')" [class.dark:text-slate-500]="!isActive('/myjob')">
+      <span class="material-symbols-outlined text-[26px]" [style.font-variation-settings]="isActive('/myjob') ? 'FILL 1' : 'FILL 0'">work</span>
+      <span class="text-[10px] mt-1 font-medium" [class.font-bold]="isActive('/myjob')">My Job</span>
+    </button>
+
+    <button routerLink="/settings" class="flex flex-col items-center justify-center flex-1 transition-colors"
+      [class.text-primary]="isActive('/settings')" [class.text-slate-400]="!isActive('/settings')" [class.dark:text-slate-500]="!isActive('/settings')">
+      <span class="material-symbols-outlined text-[26px]" [style.font-variation-settings]="isActive('/settings') ? 'FILL 1' : 'FILL 0'">settings</span>
+      <span class="text-[10px] mt-1 font-medium" [class.font-bold]="isActive('/settings')">Account</span>
+    </button>
+  </div>
+</nav>

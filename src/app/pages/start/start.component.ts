@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { IonicModule } from '@ionic/angular';
 import { Router } from '@angular/router';
 
@@ -10,13 +10,13 @@ import { Router } from '@angular/router';
   imports: [IonicModule]
 })
 export class StartComponent  implements OnInit {
+  private router = inject(Router);
 
-  constructor(private router: Router) { }
+  constructor() { }
 
   ngOnInit() {
     setTimeout(() => {
       this.router.navigate(['/interest-start']);
     }, 3000);
   }
-
 }

@@ -13,7 +13,17 @@
 @import "@ionic/angular/css/core.css";
 
 :root {
-  --ion-font-family: 'Inter', sans-serif;
+  --ion-font-family: 'Manrope', sans-serif;
+}
+
+body {
+  min-height: max(884px, 100dvh);
+}
+
+.dot-pattern {
+  background-image: radial-gradient(circle, #cbd5e1 1px, transparent 1px);
+  background-size: 24px 24px;
+  opacity: 0.1;
 }
 
 /* Basic CSS for apps built with Ionic */
@@ -28,6 +38,31 @@
 @import "@ionic/angular/css/text-alignment.css";
 @import "@ionic/angular/css/text-transformation.css";
 @import "@ionic/angular/css/flex-utils.css";
+
+/* Remove blue focus outline and highlight from inputs */
+ion-input, ion-item {
+  --highlight-height: 0;
+  --highlight-color-focused: transparent;
+  --highlight-color-valid: transparent;
+  --highlight-color-invalid: transparent;
+  --padding-start: 0;
+  --inner-padding-end: 0;
+}
+
+ion-input {
+  &.native-input {
+    outline: none !important;
+    box-shadow: none !important;
+  }
+}
+
+input:focus, 
+textarea:focus, 
+select:focus,
+.native-input:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
 
 /**
  * Ionic Dark Mode

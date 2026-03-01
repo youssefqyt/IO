@@ -7,7 +7,19 @@ const routes: Routes = [
     loadChildren: () => import('./pages/home/home.module').then( m => m.HomePageModule)
   },
   {
-    path: 'Settings',
+    path: 'market',
+    loadComponent: () => import('./pages/market/market.component').then( m => m.MarketComponent)
+  },
+  {
+    path: 'message',
+    loadComponent: () => import('./pages/message/message.component').then( m => m.MessageComponent)
+  },
+  {
+    path: 'myjob',
+    loadComponent: () => import('./pages/myjob/myjob.component').then( m => m.MyjobComponent)
+  },
+  {
+    path: 'settings',
     loadComponent: () => import('./pages/settings/settings.component').then( m => m.SettingsComponent)
   },
   {
@@ -17,6 +29,14 @@ const routes: Routes = [
   {
     path: 'interest-start',
     loadComponent: () => import('./pages/interest_start/interest_start.page').then(m => m.InterestStartPage)
+  },
+  {
+    path: 'login',
+    loadComponent: () => import('./pages/login/login.component').then(m => m.LoginComponent)
+  },
+  {
+    path: 'sign',
+    loadComponent: () => import('./pages/sign/sign.component').then(m => m.SignComponent)
   },
   {
     path: '',

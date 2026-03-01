@@ -1,0 +1,107 @@
+<ion-content class="bg-slate-50 dark:bg-slate-950 font-display relative" [fullscreen]="true">
+  <!-- Dot Pattern Background -->
+  <div class="absolute inset-0 dot-pattern pointer-events-none opacity-[0.05]"></div>
+
+  <div class="relative min-h-full max-w-md mx-auto flex flex-col">
+    <header class="sticky top-0 z-30 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl px-6 pt-12 pb-2 border-b border-slate-100 dark:border-slate-800">
+      <div class="flex items-center justify-between mb-6">
+        <div class="scale-75 origin-left">
+          <img src="assets/image/logo.svg" alt="Free Work Logo" class="h-10 w-auto">
+        </div>
+        <button class="w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center border border-slate-100 dark:border-slate-700 shadow-sm transition-all active:scale-95">
+          <span class="material-symbols-outlined text-slate-600 dark:text-slate-300">edit_square</span>
+        </button>
+      </div>
+      <h1 class="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-4 px-1">Messages</h1>
+      <div class="relative mb-2">
+        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xl font-light">search</span>
+        <input class="w-full bg-slate-100/80 dark:bg-slate-800/80 border-none rounded-2xl py-2.5 pl-10 pr-4 text-sm focus:ring-2 focus:ring-primary/20 placeholder:text-slate-400 dark:text-white transition-all" placeholder="Search conversations..." type="text"/>
+      </div>
+    </header>
+
+    <main class="flex-1 relative z-10 px-4 pt-2 pb-24">
+      <div class="divide-y divide-slate-50 dark:divide-slate-900">
+        <!-- Message Row 1 -->
+        <div class="flex items-center gap-4 py-4 px-2 cursor-pointer transition-all active:bg-slate-50 dark:active:bg-slate-900/50 rounded-2xl group">
+          <div class="relative flex-shrink-0">
+            <div class="w-14 h-14 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center overflow-hidden border border-slate-100 dark:border-slate-700 group-hover:scale-105 transition-transform">
+              <span class="material-symbols-outlined text-slate-400 text-3xl font-light">person</span>
+            </div>
+            <div class="absolute top-0 right-0 w-3.5 h-3.5 bg-primary border-2 border-white dark:border-slate-900 rounded-full shadow-sm"></div>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex justify-between items-baseline mb-0.5">
+              <h3 class="font-bold text-slate-900 dark:text-white truncate">Alex Rivera</h3>
+              <span class="text-[11px] font-bold text-primary">09:44 AM</span>
+            </div>
+            <p class="text-sm text-slate-900 dark:text-slate-200 font-semibold truncate leading-snug">Great! It's for a fintech startup. We need...</p>
+          </div>
+        </div>
+
+        <!-- Message Row 2 -->
+        <div class="flex items-center gap-4 py-4 px-2 cursor-pointer transition-all active:bg-slate-50 dark:active:bg-slate-900/50 rounded-2xl group">
+          <div class="relative flex-shrink-0">
+            <div class="w-14 h-14 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center overflow-hidden border border-slate-100 dark:border-slate-700 group-hover:scale-105 transition-transform">
+              <span class="material-symbols-outlined text-slate-400 text-3xl font-light">person</span>
+            </div>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex justify-between items-baseline mb-0.5">
+              <h3 class="font-bold text-slate-900 dark:text-white truncate">Sarah Jenkins</h3>
+              <span class="text-[11px] text-slate-400 dark:text-slate-500 font-medium">Yesterday</span>
+            </div>
+            <p class="text-sm text-slate-500 dark:text-slate-400 truncate leading-snug font-medium">The contract has been signed. Looking forward to the kickoff!</p>
+          </div>
+        </div>
+
+        <!-- Message Row 3 -->
+        <div class="flex items-center gap-4 py-4 px-2 cursor-pointer transition-all active:bg-slate-50 dark:active:bg-slate-900/50 rounded-2xl group">
+          <div class="relative flex-shrink-0">
+            <div class="w-14 h-14 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center overflow-hidden border border-slate-100 dark:border-slate-700 group-hover:scale-105 transition-transform">
+              <span class="material-symbols-outlined text-slate-400 text-3xl font-light">person</span>
+            </div>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex justify-between items-baseline mb-0.5">
+              <h3 class="font-bold text-slate-900 dark:text-white truncate">Mark Thompson</h3>
+              <span class="text-[11px] text-slate-400 dark:text-slate-500 font-medium">Tuesday</span>
+            </div>
+            <p class="text-sm text-slate-500 dark:text-slate-400 truncate leading-snug font-medium">Could you send over the latest wireframes for the dashboard?</p>
+          </div>
+        </div>
+
+        <!-- Message Row 4 -->
+        <div class="flex items-center gap-4 py-4 px-2 cursor-pointer transition-all active:bg-slate-50 dark:active:bg-slate-900/50 rounded-2xl group">
+          <div class="relative flex-shrink-0">
+            <div class="w-14 h-14 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center overflow-hidden border border-slate-100 dark:border-slate-700 group-hover:scale-105 transition-transform">
+              <span class="material-symbols-outlined text-slate-400 text-3xl font-light">person</span>
+            </div>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex justify-between items-baseline mb-0.5">
+              <h3 class="font-bold text-slate-900 dark:text-white truncate">Emily Chen</h3>
+              <span class="text-[11px] text-slate-400 dark:text-slate-500 font-medium">Oct 20</span>
+            </div>
+            <p class="text-sm text-slate-500 dark:text-slate-400 truncate leading-snug font-medium">Thanks for the quick turnaround on those icons!</p>
+          </div>
+        </div>
+
+        <!-- Message Row 5 -->
+        <div class="flex items-center gap-4 py-4 px-2 cursor-pointer transition-all active:bg-slate-50 dark:active:bg-slate-900/50 rounded-2xl group">
+          <div class="relative flex-shrink-0">
+            <div class="w-14 h-14 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center overflow-hidden border border-slate-100 dark:border-slate-700 group-hover:scale-105 transition-transform">
+              <span class="material-symbols-outlined text-slate-400 text-3xl font-light">person</span>
+            </div>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex justify-between items-baseline mb-0.5">
+              <h3 class="font-bold text-slate-900 dark:text-white truncate">David Miller</h3>
+              <span class="text-[11px] text-slate-400 dark:text-slate-500 font-medium">Oct 18</span>
+            </div>
+            <p class="text-sm text-slate-500 dark:text-slate-400 truncate leading-snug font-medium">Let's hop on a call tomorrow to discuss the budget.</p>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</ion-content>

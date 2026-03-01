@@ -6,38 +6,59 @@ def serach(Collection, email):
     if Collection.find_one({"email": email}):
         return True
     return False
-
 def validate(name, email, password):
-    errors = []
-    if not name or not email or not password:
-        errors.append("All fields are required")
-    if name and len(name.strip().split()) < 2:
-        errors.append("Name must include first and last name")
-    if email:
+    errors = {}
+
+    # Full Name
+    if not name:
+        errors["fullName"] = "Full name is required"
+    elif len(name.strip().split()) < 2:
+        errors["fullName"] = "Name must include first and last name"
+
+    # Email
+    if not email:
+        errors["email"] = "Email is required"
+    else:
         email_regex = r'^[\w\.-]+@[\w\.-]+\.\w+$'
         if not re.match(email_regex, email):
-            errors.append("Invalid email format")
-    if password and len(password) < 8:
-        errors.append("Password must be at least 8 characters")
-    return errors
+            errors["email"] = "Invalid email format"
 
+    # Password
+    if not password:
+        errors["password"] = "Password is required"
+    elif len(password) < 8:
+        errors["password"] = "Password must be at least 8 characters"
+
+    return errors
 def register_user(db):
     data = request.get_json()
     role = data.get('role')
     name = data.get('fullName')
     email = data.get('email')
     password = data.get('password')
+
     errors = validate(name, email, password)
+
+    # تحقق من الدور
+    if role not in ["freelancer", "client"]:
+        errors["role"] = "Invalid role selected"
+
+    Collection = db["Freelancer"] if role == "freelancer" else db["Client"]
+
+    # تحقق من وجود الإيميل
+    if email and serach(Collection, email):
+        errors["email"] = "User already exists"
+
+    # إذا فما أخطاء
     if errors:
         return jsonify({"errors": errors}), 400
-    Collection = db["Freelancer"] if role == "freelancer" else db["Client"]
-    if serach(Collection, email):
-        return jsonify({"errors": ["User already exists"]}), 400
+
     hashed_password = generate_password_hash(password)
+
     Collection.insert_one({
         "username": name,
         "email": email,
         "password": hashed_password
     })
 
-    return jsonify({"message": "User registered successfully"}), 201
+    return jsonify({"message": "Account Created successfully"}), 201

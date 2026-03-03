@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IonicModule } from '@ionic/angular';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 
@@ -15,7 +15,6 @@ import { FormsModule } from '@angular/forms';
 export class SignComponent {
 
   selectedRole: 'freelancer' | 'client' = 'freelancer';
-  showPassword = false;
   isLoading = false;
 
   fullName: string = '';
@@ -34,14 +33,10 @@ export class SignComponent {
   // Success message
   successMessage: string = '';
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private router: Router) {}
 
   setRole(role: 'freelancer' | 'client') {
     this.selectedRole = role;
-  }
-
-  togglePassword() {
-    this.showPassword = !this.showPassword;
   }
 
   signup() {
@@ -67,11 +62,24 @@ export class SignComponent {
           // إذا الكل صحيح
           this.successMessage = res?.message || "Compte created";
 
+          // Keep profile data available for profile page display.
+          const createdProfile = {
+            fullName: this.fullName.trim(),
+            email: this.email.trim(),
+            role: this.selectedRole,
+            skills: this.selectedRole === 'freelancer'
+              ? ['UI/UX Design', 'Branding', 'Figma', 'Interaction', 'Motion']
+              : ['Project Management', 'Communication', 'Hiring', 'Product Strategy']
+          };
+          localStorage.setItem('fw_profile', JSON.stringify(createdProfile));
+
           // Reset form
           this.fullName = '';
           this.email = '';
           this.password = '';
           this.selectedRole = 'freelancer';
+          this.router.navigateByUrl('/accountecreated');
+          
         },
 
         error: (err) => {

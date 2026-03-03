@@ -1,0 +1,117 @@
+<ion-content [fullscreen]="true" class="profile-content font-display">
+  <div class="page-wrap">
+    <div class="dot-pattern"></div>
+
+    <header class="topbar">
+      <button class="icon-btn">
+        <span class="material-icons-round">arrow_back_ios_new</span>
+      </button>
+      <button class="icon-btn">
+        <span class="material-icons-round">share</span>
+      </button>
+    </header>
+
+    <main class="profile-body">
+      <section class="hero">
+        <div class="avatar-wrap">
+          <div class="avatar-ring">
+            <img
+              alt="Alex Sterling Profile"
+              class="avatar-img"
+              src="https://lh3.googleusercontent.com/aida-public/AB6AXuBx6GTb38msY05eLB7bZa0-dtMUeIhrd6Ag_Nkpbf0OKJQG6oNvxbSWz1BucvWmzn3SnCBjldOfqHkCcQ6J8bF35Ul7VxqqJG5s4rv7QpzwcAEdrAfmfPJfdPhx4pVse8lRC-3yAAdQbtPLAEOMdj1uN0zR8a8C2vC62nZMkgp8vSjWJv5FO9Jkv9h6U1aTUvy2imu61zVafptyLsqYAF1BMmf6yGmFYXYKTLKvnIOWBRlGJ6Y6PRq2H4PdLQJYwdHAjnCoenIDbnhy"
+            />
+          </div>
+          <span class="online-dot"></span>
+        </div>
+
+        <h1>{{ profile.fullName }}</h1>
+        <p class="job-title">{{ profile.role === 'freelancer' ? 'Freelancer' : 'Client' }}</p>
+
+        <div class="badges">
+          <span class="badge badge-active">ACTIVE</span>
+          <span class="badge badge-role">{{ profile.role | uppercase }}</span>
+        </div>
+      </section>
+
+      <section class="rating-card">
+        <div class="rating-head">
+          <div class="star-chip">
+            <span class="material-symbols-outlined">star</span>
+          </div>
+          <div>
+            <div class="score-line">
+              <span class="score">4.9</span>
+              <span class="denom">/ 5.0</span>
+            </div>
+            <p class="review-count">128 TOTAL REVIEWS</p>
+          </div>
+        </div>
+
+        <div class="rating-rows">
+          <div class="rating-row">
+            <span>Professionalism</span>
+            <div class="stars">
+              <span class="material-symbols-outlined filled">star</span>
+              <span class="material-symbols-outlined filled">star</span>
+              <span class="material-symbols-outlined filled">star</span>
+              <span class="material-symbols-outlined filled">star</span>
+              <span class="material-symbols-outlined filled">star</span>
+            </div>
+          </div>
+          <div class="rating-row">
+            <span>Quality of Service</span>
+            <div class="stars">
+              <span class="material-symbols-outlined filled">star</span>
+              <span class="material-symbols-outlined filled">star</span>
+              <span class="material-symbols-outlined filled">star</span>
+              <span class="material-symbols-outlined filled">star</span>
+              <span class="material-symbols-outlined empty">star</span>
+            </div>
+          </div>
+        </div>
+
+        <button class="outline-btn">See All Reviews</button>
+      </section>
+
+      <button class="primary-btn">
+        <span class="material-symbols-outlined">edit</span>
+        Edit Profile
+      </button>
+
+      <section class="block">
+        <h2>ACCOUNT</h2>
+        <div class="panel account-panel">
+          <div class="info-row">
+            <span class="label">Full Name</span>
+            <span class="value">{{ profile.fullName }}</span>
+          </div>
+          <div class="info-row">
+            <span class="label">Email</span>
+            <span class="value">{{ profile.email }}</span>
+          </div>
+          <div class="info-row">
+            <span class="label">Role</span>
+            <span class="value">{{ profile.role | titlecase }}</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="block">
+        <h2>BIO</h2>
+        <div class="panel">
+          <p>
+            Passionate designer with 8+ years of experience in creating cohesive
+            brand identities and intuitive digital experiences.
+          </p>
+        </div>
+      </section>
+
+      <section class="block">
+        <h2>SKILLS</h2>
+        <div class="skills">
+          <span *ngFor="let skill of profile.skills">{{ skill }}</span>
+        </div>
+      </section>
+    </main>
+  </div>
+</ion-content>

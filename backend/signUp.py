@@ -34,7 +34,7 @@ def register_user(db):
     data = request.get_json()
     role = data.get('role')
     name = data.get('fullName')
-    email = data.get('email')
+    email = (data.get('email') or '').strip().lower()
     password = data.get('password')
 
     errors = validate(name, email, password)
@@ -45,8 +45,9 @@ def register_user(db):
 
     Collection = db["Freelancer"] if role == "freelancer" else db["Client"]
 
-    # تحقق من وجود الإيميل
-    if email and serach(Collection, email):
+    # تحقق من وجود الإيميل في الكولكشنين
+    email_exists = serach(db["Freelancer"], email) or serach(db["Client"], email)
+    if email and email_exists:
         errors["email"] = "User already exists"
 
     # إذا فما أخطاء

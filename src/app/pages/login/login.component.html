@@ -5,7 +5,7 @@
 
   <ion-grid class="min-h-full flex flex-col items-center justify-center relative z-10">
     <ion-row class="w-full justify-center">
-      <ion-col size="12" size-md="8" size-lg="6" size-xl="4" class="max-w-[440px] bg-white dark:bg-slate-900 shadow-2xl shadow-slate-200/50 dark:shadow-none min-h-screen md:min-h-0 md:rounded-[40px] md:my-10 ion-padding">
+      <ion-col size="12" size-md="8" size-lg="6" size-xl="4" class="w-full max-w-full bg-white dark:bg-slate-900 min-h-screen md:min-h-0 ion-padding">
         
         <!-- Logo Section -->
         <div class="flex flex-col items-center mt-6 mb-10">
@@ -30,6 +30,9 @@
                 required
               ></ion-input>
             </ion-item>
+            <p *ngIf="formErrors.email" class="text-red-500 text-sm mt-1 ml-1">
+              {{ formErrors.email }}
+            </p>
           </div>
 
           <!-- Password Field -->
@@ -39,19 +42,19 @@
               <ion-input
                 [(ngModel)]="password"
                 name="password"
-                [type]="showPassword ? 'text' : 'password'"
+                type="password"
                 placeholder="••••••••"
                 class="text-slate-900 dark:text-white font-medium px-4"
                 required
               ></ion-input>
-              <ion-button slot="end" fill="clear" (click)="togglePassword()" class="text-slate-400 mr-2" type="button">
-                <ion-icon [name]="showPassword ? 'eye-off-outline' : 'eye-outline'" slot="icon-only" class="text-xl"></ion-icon>
-              </ion-button>
             </ion-item>
+            <p *ngIf="formErrors.password" class="text-red-500 text-sm mt-1 ml-1">
+              {{ formErrors.password }}
+            </p>
           </div>
 
-          <p *ngIf="errorMessage" class="text-sm text-red-500 font-semibold">
-            {{ errorMessage }}
+          <p *ngIf="formErrors.general" class="text-sm text-red-500 font-semibold">
+            {{ formErrors.general }}
           </p>
 
           <!-- Forgot Password -->
@@ -102,3 +105,6 @@
     </ion-row>
   </ion-grid>
 </ion-content>
+
+
+

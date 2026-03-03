@@ -1,8 +1,13 @@
 <ion-content [fullscreen]="true" class="market-content">
-  <div class="relative z-10 mx-auto w-full max-w-md px-4 pt-6 pb-28">
+  <div class="relative z-10 w-full max-w-full px-4 pt-6 pb-28">
     <header class="mb-5">
       <div class="mb-4 flex items-center justify-between">
-        <h1 class="text-[20px] font-semibold tracking-tight text-slate-900">Marketplace</h1>
+        <div class="flex items-center gap-2 min-w-0">
+          <div class="scale-75 origin-left">
+            <img src="assets/image/logo.svg" alt="Free Work Logo" class="h-10 w-auto">
+          </div>
+          <h1 class="text-[20px] font-extrabold tracking-tight text-slate-900 truncate">Marketplace</h1>
+        </div>
         <button class="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white">
           <span class="material-symbols-outlined text-[18px] text-slate-500">shopping_bag</span>
         </button>
@@ -77,3 +82,5 @@
     </section>
   </div>
 </ion-content>
+
+

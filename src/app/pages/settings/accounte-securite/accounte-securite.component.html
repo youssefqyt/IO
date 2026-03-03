@@ -1,0 +1,51 @@
+<ion-content class="account-security-page">
+  <div class="device-frame">
+    <header class="top-header">
+      <button class="icon-btn" type="button" (click)="goBack()" aria-label="Go back">
+        <span class="material-symbols-outlined">arrow_back_ios_new</span>
+      </button>
+      <h1>Settings</h1>
+      <div class="header-spacer" aria-hidden="true"></div>
+    </header>
+
+    <main class="content dot-grid">
+      <section class="intro">
+        <h2>Account &amp; Security</h2>
+        <p>Manage your profile and privacy</p>
+      </section>
+
+      <section class="card-list">
+        <div class="card">
+          <button class="item group" type="button" (click)="onAccountInformation()">
+            <div class="item-left">
+              <div class="icon-wrap">
+                <span class="material-symbols-outlined">person</span>
+              </div>
+              <div>
+                <p class="title">Account Information</p>
+                <p class="sub">Edit your name, bio, and CV</p>
+              </div>
+            </div>
+            <span class="material-symbols-outlined chevron">chevron_right</span>
+          </button>
+
+          <div class="divider"></div>
+
+          <button class="item group" type="button" (click)="onChangePassword()">
+            <div class="item-left">
+              <div class="icon-wrap">
+                <span class="material-symbols-outlined">key</span>
+              </div>
+              <div>
+                <p class="title">Change Password</p>
+                <p class="sub">Update your account credentials</p>
+              </div>
+            </div>
+            <span class="material-symbols-outlined chevron">chevron_right</span>
+          </button>
+        </div>
+      </section>
+    </main>
+  </div>
+</ion-content>
+

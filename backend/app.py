@@ -4,7 +4,7 @@ from pymongo import MongoClient
 from config import SECRET_KEY
 from config import MONGO_URI
 from signUp import register_user
-#from login import login_user
+from login import login_user
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = SECRET_KEY
@@ -16,7 +16,6 @@ db = client.get_database("FreeLancerDB")
 @app.route('/api/test-db', methods=['GET'])
 def test_db():
     try:
-        # جرب تجيب قائمة الـ collections في الداتابيز
         collections = db.list_collection_names()
         return jsonify({"message": "MongoDB connection is working!", "collections": collections}), 200
     except Exception as e:
@@ -25,9 +24,9 @@ def test_db():
 def signup():
     return register_user(db)
 
-#@app.route('/api/login', methods=['POST'])
-#def login():
-    #return login_user(db)
+@app.route('/api/login', methods=['POST'])
+def login():
+    return login_user(db)
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0',port=5000)

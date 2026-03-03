@@ -1,12 +1,12 @@
-<ion-content class="ion-padding bg-white dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 antialiased overflow-hidden">
-  <div class="relative w-full max-w-md mx-auto flex flex-col min-h-full pb-32">
+<ion-content class="bg-white dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 antialiased overflow-hidden">
+  <div class="relative w-full max-w-full px-4 flex flex-col min-h-full pb-32">
     <header class="pt-16 pb-6 relative z-10">
       <h1 class="text-3xl font-bold tracking-tight px-2">Settings</h1>
     </header>
 
     <main class="flex-1 space-y-8 relative z-10 px-2">
       <!-- Profile Section -->
-      <section class="flex items-center space-x-4 p-4 bg-primary/5 dark:bg-primary/10 rounded-2xl border border-primary/10">
+      <section (click)="goToProfile()" class="flex items-center space-x-4 p-4 bg-primary/5 dark:bg-primary/10 rounded-2xl border border-primary/10 cursor-pointer transition-all active:scale-[0.99]">
         <div class="relative">
           <div class="w-16 h-16 rounded-full overflow-hidden border-2 border-white dark:border-slate-700 shadow-md">
             <img alt="Profile" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBx6GTb38msY05eLB7bZa0-dtMUeIhrd6Ag_Nkpbf0OKJQG6oNvxbSWz1BucvWmzn3SnCBjldOfqHkCcQ6J8bF35Ul7VxqqJG5s4rv7QpzwcAEdrAfmfPJfdPhx4pVse8lRC-3yAAdQbtPLAEOMdj1uN0zR8a8C2vC62nZMkgp8vSjWJv5FO9Jkv9h6U1aTUvy2imu61zVafptyLsqYAF1BMmf6yGmFYXYKTLKvnIOWBRlGJ6Y6PRq2H4PdLQJYwdHAjnCoenIDbnhy"/>
@@ -25,7 +25,7 @@
       <div class="space-y-1">
         <h4 class="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-3 px-1">Account & Security</h4>
         <div class="bg-slate-50/50 dark:bg-slate-900/50 rounded-2xl px-2">
-          <button class="w-full flex items-center justify-between py-4 px-2 group">
+          <button (click)="goToAccountSecurity()" class="w-full flex items-center justify-between py-4 px-2 group">
             <div class="flex items-center space-x-4">
               <div class="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 shadow-sm">
                 <span class="material-symbols-outlined text-[22px]">shield_person</span>
@@ -116,7 +116,7 @@
 
       <!-- Logout Section -->
       <div class="pt-4 space-y-6 pb-12">
-        <button class="w-full py-4 px-6 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 font-bold rounded-2xl transition-all active:scale-[0.98] border border-red-100 dark:border-red-500/20">
+        <button (click)="onLogout()" class="w-full py-4 px-6 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 font-bold rounded-2xl transition-all active:scale-[0.98] border border-red-100 dark:border-red-500/20">
           Log Out
         </button>
         <div class="text-center pb-8">
@@ -126,3 +126,8 @@
     </main>
   </div>
 </ion-content>
+
+
+
+
+

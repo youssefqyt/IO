@@ -1,3 +1,46 @@
-<p>
-  accountecreated works!
-</p>
+<ion-content [fullscreen]="true" class="welcome-screen font-display">
+  <div class="page-bg">
+    <div class="dot-pattern"></div>
+    <span class="shape shape-a"></span>
+    <span class="shape shape-b"></span>
+    <span class="shape shape-c"></span>
+    <span class="shape shape-d"></span>
+    <span class="shape shape-e"></span>
+  </div>
+
+  <main class="welcome-wrap">
+    <div class="phone-card">
+      <div class="brand-top">
+        <span class="brand-dot"></span>
+        <span class="brand-text">FREELANCEHUB</span>
+        <span class="brand-dot"></span>
+      </div>
+
+      <div class="graphic">
+        <div class="ring ring-1"></div>
+        <div class="ring ring-2"></div>
+        <div class="ring ring-3"></div>
+        <div class="logo-box">
+          <span class="fw-tag">FW</span>
+          <span class="material-symbols-outlined check-icon">check_circle</span>
+        </div>
+      </div>
+
+      <h1>Welcome to Free Work!</h1>
+      <p>
+        Your account has been successfully created. You're now ready to join our
+        professional network.
+      </p>
+
+      <div class="actions">
+        <button class="btn btn-primary" routerLink="/settings">
+          Complete My Profile
+        </button>
+        <button class="btn btn-outline" routerLink="/market">
+          Browse Trending Offers
+        </button>
+      </div>
+
+    </div>
+  </main>
+</ion-content>

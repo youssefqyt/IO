@@ -17,7 +17,23 @@
 }
 
 body {
-  min-height: max(884px, 100dvh);
+  min-height: 100dvh;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body,
+ion-app,
+ion-router-outlet,
+.ion-page {
+  width: 100%;
+  min-height: 100dvh;
+}
+
+html,
+body {
+  overflow-x: hidden;
 }
 
 .dot-pattern {
@@ -74,3 +90,7 @@ select:focus,
 /* @import "@ionic/angular/css/palettes/dark.always.css"; */
 /* @import "@ionic/angular/css/palettes/dark.class.css"; */
 @import "@ionic/angular/css/palettes/dark.system.css";
+
+
+
+

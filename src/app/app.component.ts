@@ -12,7 +12,7 @@ export class AppComponent {
   constructor() {}
 
   showNavbar(): boolean {
-    const hiddenRoutes = ['/', '/start', '/login', '/sign'];
+    const hiddenRoutes = ['/', '/start', '/login', '/sign', '/accountecreated', '/interest-start'];
     return !hiddenRoutes.includes(this.router.url);
   }
 }

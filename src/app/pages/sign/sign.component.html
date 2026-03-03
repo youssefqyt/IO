@@ -5,7 +5,7 @@
 
   <ion-grid class="min-h-full flex flex-col items-center justify-center relative z-10">
     <ion-row class="w-full justify-center">
-      <ion-col size="12" size-md="8" size-lg="6" size-xl="4" class="max-w-[440px] bg-white dark:bg-slate-900 shadow-2xl shadow-slate-200/50 dark:shadow-none min-h-screen md:min-h-0 md:rounded-[40px] md:my-10 ion-padding">
+      <ion-col size="12" size-md="8" size-lg="6" size-xl="4" class="w-full max-w-full bg-white dark:bg-slate-900 min-h-screen md:min-h-0 ion-padding">
         
         <!-- Logo Section -->
         <div class="flex flex-col items-center mt-6 mb-10">
@@ -94,10 +94,7 @@
           <div class="space-y-1.5">
             <label class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider ml-1">Password</label>
             <ion-item lines="none" class="bg-white/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl transition-all focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10" style="--background: transparent; --padding-start: 0; --inner-padding-end: 0; --highlight-height: 0;">
-              <ion-input [type]="showPassword ? 'text' : 'password'" name="password" placeholder="••••••••" class="text-slate-900 dark:text-white font-medium px-4"[(ngModel)]="password"></ion-input>
-              <ion-button slot="end" fill="clear" (click)="togglePassword()" class="text-slate-400 mr-2" type="button">
-                <ion-icon [name]="showPassword ? 'eye-off-outline' : 'eye-outline'" slot="icon-only" class="text-xl"></ion-icon>
-              </ion-button>
+              <ion-input type="password" name="password" placeholder="••••••••" class="text-slate-900 dark:text-white font-medium px-4"[(ngModel)]="password"></ion-input>
             </ion-item><p *ngIf="formErrors.password" class="text-red-500 text-sm mt-1 ml-1">
   {{ formErrors.password }}
 </p>
@@ -151,3 +148,6 @@
     </ion-row>
   </ion-grid>
 </ion-content>
+
+
+

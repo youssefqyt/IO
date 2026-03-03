@@ -23,6 +23,14 @@ const routes: Routes = [
     loadComponent: () => import('./pages/settings/settings.component').then( m => m.SettingsComponent)
   },
   {
+    path: 'profile',
+    loadComponent: () => import('./pages/profile/profile.component').then( m => m.ProfileComponent)
+  },
+  {
+    path: 'accounte-securite',
+    loadComponent: () => import('./pages/settings/accounte-securite/accounte-securite.component').then( m => m.AccounteSecuriteComponent)
+  },
+  {
     path: 'start',
     loadComponent: () => import('./pages/start/start.component').then(m => m.StartComponent)
   },
@@ -39,6 +47,10 @@ const routes: Routes = [
     loadComponent: () => import('./pages/sign/sign.component').then(m => m.SignComponent)
   },
   {
+    path: 'accountecreated',
+    loadComponent: () => import('./pages/accountecreated/accountecreated.component').then(m => m.AccountecreatedComponent)
+  },
+  {
     path: '',
     redirectTo: 'start',
     pathMatch: 'full'
@@ -52,3 +64,4 @@ const routes: Routes = [
   exports: [RouterModule]
 })
 export class AppRoutingModule { }
+

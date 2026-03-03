@@ -1,11 +1,125 @@
-<ion-header [translucent]="true">
-  <ion-toolbar>
-    <ion-title>
-      Blank
-    </ion-title>
-  </ion-toolbar>
-</ion-header>
+<ion-content [fullscreen]="true" class="font-display antialiased text-slate-900 dark:text-slate-100 bg-background-light dark:bg-background-dark">
+  <div class="relative min-h-screen w-full max-w-full  flex flex-col bg-background-light dark:bg-background-dark overflow-x-hidden">
+    <div class="absolute inset-0 pattern-bg pointer-events-none"></div>
 
-<ion-content [fullscreen]="true">
-<p>Home page</p>
+    <header class="relative z-10 px-6 pt-12 pb-6 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 bg-primary/5 rounded-xl flex items-center justify-center border border-slate-100 dark:border-slate-800">
+          <svg class="w-6 h-6" fill="none" viewBox="0 0 100 80" xmlns="http://www.w3.org/2000/svg">
+            <path d="M20 10C20 4.47715 24.4772 0 30 0H70C75.5228 0 80 4.47715 80 10V20C80 25.5228 75.5228 30 70 30H45V45H65C70.5228 45 75 49.4772 75 55V65C75 70.5228 70.5228 75 65 75H30C24.4772 75 20 70.5228 20 65V10Z" fill="#2563EB"></path>
+            <path d="M50 35L65 65L80 35L95 65" stroke="#F97316" stroke-linecap="round" stroke-linejoin="round" stroke-width="12"></path>
+          </svg>
+        </div>
+        <div>
+          <h2 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Free Work</h2>
+          <p class="text-xs text-slate-500">Freelancer Mode</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-4">
+        <img alt="Profile" class="w-10 h-10 rounded-full border-2 border-white shadow-sm ring-1 ring-slate-100 dark:ring-slate-800" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDrYITcsFstth6QWwGMyGEfQdVidCfU8vHL3Epnku3oFTcpsxj_IyqaW9HQmXZYNWoAcFFNLtHadhWYXFTUs68i-qEkg0o7ZRL7ATthkt3OySrZzpCNnbd85FYLmVBn1V9-kfEc-AJ1dhXv4fq_X3nIsGY8cdEhVeZC3yTND5YgPBOpUiyADu-9c1uNFX6cRZBTL4W2D9t7apN18B60coPfiQYs5NP63Me_t2eQo5iRhMAsmqI9CSewtb1znbiyHhz10dXp_oJH84mb"/>
+      </div>
+    </header>
+
+    <main class="relative z-10 flex-1 space-y-8 pb-32">
+      <section class="px-6">
+        <h1 class="text-2xl font-extrabold text-slate-900 dark:text-white">Dashboard</h1>
+        <p class="text-slate-500 text-sm">Welcome back, Alex. Your projects are on track.</p>
+      </section>
+
+      <section class="px-6">
+        <button class="w-full bg-primary p-4 rounded-2xl flex items-center justify-between shadow-lg shadow-primary/20 group">
+          <div class="flex items-center gap-4">
+            <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+              <span class="material-symbols-outlined text-white">add</span>
+            </div>
+            <div class="text-left">
+              <h4 class="text-sm font-bold text-white uppercase tracking-wider">New Gig</h4>
+              <p class="text-xs text-blue-100">Create a new service offering</p>
+            </div>
+          </div>
+          <span class="material-symbols-outlined text-white/50 group-hover:text-white transition-colors">chevron_right</span>
+        </button>
+      </section>
+
+      <section class="px-6">
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-5 shadow-sm">
+          <div class="flex justify-between items-start mb-4">
+            <div>
+              <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1">Total Earnings</p>
+              <h3 class="text-3xl font-bold text-slate-900 dark:text-white">$4,850.00</h3>
+            </div>
+            <span class="bg-green-50 text-green-600 text-[10px] font-bold px-2 py-1 rounded-full">+12.5%</span>
+          </div>
+          <div class="h-1 w-full bg-slate-50 dark:bg-slate-800 rounded-full overflow-hidden">
+            <div class="h-full bg-primary w-2/3 rounded-full"></div>
+          </div>
+          <div class="flex justify-between mt-3">
+            <p class="text-[11px] text-slate-400 font-medium">Monthly Goal: $7,000</p>
+            <button class="text-[11px] font-bold text-primary flex items-center gap-1">
+              View Analytics <span class="material-symbols-outlined !text-sm">trending_up</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <div class="flex items-center justify-between px-6 mb-4">
+          <h4 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Recent Projects</h4>
+          <button class="text-xs font-semibold text-primary">See All</button>
+        </div>
+
+        <div class="flex overflow-x-auto gap-4 px-6 hide-scrollbar pb-2">
+          <div *ngFor="let project of recentProjects" class="min-w-[280px] bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 p-4 shadow-sm flex flex-col justify-between">
+            <div>
+              <div class="flex justify-between items-start mb-2">
+                <h5 class="text-sm font-bold text-slate-900 dark:text-white line-clamp-1">{{ project.title }}</h5>
+                <span class="text-xs font-bold text-primary">{{ project.price }}</span>
+              </div>
+              <p class="text-xs text-slate-500 line-clamp-2 mb-4 leading-relaxed">{{ project.description }}</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <span *ngFor="let tag of project.tags" class="px-2 py-1 bg-slate-50 dark:bg-slate-800 rounded text-[10px] font-medium text-slate-500">{{ tag }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="px-6 mt-6">
+          <button class="w-full bg-primary text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/20 flex items-center justify-center gap-2 text-sm uppercase tracking-wider">
+            Explore Projects
+            <span class="material-symbols-outlined !text-lg">arrow_forward</span>
+          </button>
+        </div>
+      </section>
+
+      <section class="px-6">
+        <div class="flex items-center justify-between mb-4">
+          <h4 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Active Gigs</h4>
+          <span class="text-xs font-semibold text-primary">3 Total</span>
+        </div>
+
+        <div class="space-y-3">
+          <div *ngFor="let gig of activeGigs" class="bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 p-4 shadow-sm">
+            <div class="flex justify-between items-start mb-3">
+              <div>
+                <h5 class="text-sm font-bold text-slate-800 dark:text-slate-200">{{ gig.title }}</h5>
+                <p class="text-xs text-slate-500">{{ gig.company }}</p>
+              </div>
+              <span class="bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[10px] font-bold px-2 py-1 rounded border border-slate-100 dark:border-slate-700">{{ gig.due }}</span>
+            </div>
+            <div class="space-y-2">
+              <div class="flex justify-between items-end">
+                <p class="text-[10px] font-medium text-slate-400 uppercase">Progress</p>
+                <p class="text-[10px] font-bold text-slate-700 dark:text-slate-300">{{ gig.progress }}%</p>
+              </div>
+              <div class="h-1 w-full bg-slate-50 dark:bg-slate-800 rounded-full overflow-hidden">
+                <div class="h-full rounded-full" [class.bg-secondary]="gig.colorClass === 'secondary'" [class.bg-primary]="gig.colorClass === 'primary'" [style.width.%]="gig.progress"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
 </ion-content>
+
+

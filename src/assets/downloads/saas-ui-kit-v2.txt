@@ -1,0 +1,11 @@
+Free Work Asset Delivery
+Product: SaaS UI Kit v2.0
+Package: Starter delivery bundle
+
+Included:
+- 120+ screen planning checklist
+- Auth and dashboard section notes
+- Design system handoff summary
+
+Use this file as the shipped sample package for checkout verification.
+Replace it with the final Figma or ZIP export when the full commercial asset is ready.

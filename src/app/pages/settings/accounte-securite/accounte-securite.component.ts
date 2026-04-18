@@ -23,7 +23,6 @@ export class AccounteSecuriteComponent implements OnInit {
   }
 
   onChangePassword(): void {
-    // Route can be replaced with a dedicated change-password page when available.
-    this.router.navigateByUrl('/settings');
+    this.router.navigateByUrl('/change-password');
   }
 }

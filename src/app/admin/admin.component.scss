@@ -1,0 +1,51 @@
+:host {
+  display: block;
+}
+
+.admin-content {
+  --background: #f8fafc;
+}
+
+.pattern-bg {
+  background-image: radial-gradient(circle at 2px 2px, rgba(0, 0, 0, 0.02) 1px, transparent 0);
+  background-size: 24px 24px;
+}
+
+:host-context(.dark) .pattern-bg {
+  background-image: radial-gradient(circle at 2px 2px, rgba(255, 255, 255, 0.02) 1px, transparent 0);
+}
+
+.ios-blur {
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.approval-badge.account {
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+}
+
+.approval-badge.gig {
+  background: rgba(37, 99, 235, 0.12);
+  color: #2563eb;
+}
+
+.approval-badge.product {
+  background: rgba(249, 115, 22, 0.12);
+  color: #ea580c;
+}
+
+:host-context(.dark) .approval-badge.account {
+  background: rgba(16, 185, 129, 0.2);
+  color: #6ee7b7;
+}
+
+:host-context(.dark) .approval-badge.gig {
+  background: rgba(37, 99, 235, 0.2);
+  color: #93c5fd;
+}
+
+:host-context(.dark) .approval-badge.product {
+  background: rgba(249, 115, 22, 0.2);
+  color: #fdba74;
+}

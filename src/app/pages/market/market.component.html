@@ -17,7 +17,8 @@
         <span class="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[16px] text-slate-400">search</span>
         <input
           type="text"
-          placeholder="Search conversations..."
+          [(ngModel)]="searchTerm"
+          placeholder="Search assets, kits, icons..."
           class="h-10 w-full rounded-xl border border-slate-100 bg-slate-100 pl-9 pr-3 text-[12px] text-slate-700 placeholder:text-slate-400 focus:border-primary focus:bg-white focus:outline-none"
         />
       </div>
@@ -25,39 +26,39 @@
       <div class="hide-scrollbar flex gap-2 overflow-x-auto pb-1">
         <button
           *ngFor="let category of categories; let i = index"
+          type="button"
+          (click)="selectCategory(category)"
           class="whitespace-nowrap rounded-full border px-3.5 py-1.5 text-[10px] font-semibold"
-          [class.bg-primary]="i === 0"
-          [class.text-white]="i === 0"
-          [class.border-primary]="i === 0"
-          [class.border-slate-200]="i !== 0"
-          [class.bg-white]="i !== 0"
-          [class.text-slate-500]="i !== 0"
+          [class.bg-primary]="selectedCategory === category"
+          [class.text-white]="selectedCategory === category"
+          [class.border-primary]="selectedCategory === category"
+          [class.border-slate-200]="selectedCategory !== category"
+          [class.bg-white]="selectedCategory !== category"
+          [class.text-slate-500]="selectedCategory !== category"
         >
           {{ category }}
         </button>
       </div>
     </header>
 
-    <section class="mb-7">
+    <section *ngIf="!hasNoResults; else noResultsState" class="mb-7">
       <div class="grid grid-cols-2 gap-x-3.5 gap-y-6">
-        <article *ngFor="let asset of featuredAssets">
-          <div class="relative mb-2.5 overflow-hidden rounded-2xl border border-slate-100 bg-slate-100">
-            <img [src]="asset.image" [alt]="asset.alt" class="h-[140px] w-full object-cover" />
-            <button class="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-white/90 shadow-sm">
-              <span class="material-symbols-outlined text-[14px] text-slate-400">favorite</span>
-            </button>
-          </div>
-          <h3 class="mb-0.5 text-[12px] font-semibold text-slate-900">{{ asset.title }}</h3>
-          <p class="mb-1 text-[8px] font-semibold uppercase tracking-[0.12em] text-slate-400">{{ asset.studio }}</p>
-          <span class="text-[14px] font-bold text-[#f97316]">{{ asset.price }}</span>
-        </article>
+        <app-market-product-card
+          *ngFor="let asset of filteredAssets"
+          [product]="asset"
+          (pay)="onPayProduct($event)"
+          (viewInfo)="openProductInfo($event)"
+        ></app-market-product-card>
       </div>
+      <p *ngIf="paymentMessage" class="mt-4 rounded-xl bg-emerald-50 px-3 py-2 text-[12px] font-semibold text-emerald-700">
+        {{ paymentMessage }}
+      </p>
     </section>
 
     <section>
       <div class="mb-3 flex items-center justify-between">
         <h2 class="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">Active Project Offers</h2>
-        <button class="flex items-center gap-1 text-[11px] font-semibold text-primary">
+        <button routerLink="/browse-project" class="flex items-center gap-1 text-[11px] font-semibold text-primary">
           See All
           <span class="material-symbols-outlined text-[13px]">arrow_forward</span>
         </button>
@@ -74,12 +75,47 @@
           </div>
           <h3 class="mb-1 text-[14px] font-semibold text-slate-900">{{ offer.title }}</h3>
           <p class="mb-4 text-[10px] leading-[1.45] text-slate-500">{{ offer.desc }}</p>
-          <button class="w-full rounded-xl bg-primary py-2.5 text-[11px] font-semibold text-white shadow-[0_6px_14px_rgba(37,123,244,0.25)]">
+          <button
+            routerLink="/submit-proposal"
+            [queryParams]="{ title: offer.title, budget: offer.budget, deadline: offer.deadline, time: offer.postedAt }"
+            class="w-full rounded-xl bg-primary py-2.5 text-[11px] font-semibold text-white shadow-[0_6px_14px_rgba(37,123,244,0.25)]"
+          >
             Send Proposal
           </button>
         </article>
       </div>
     </section>
+
+    <ng-template #noResultsState>
+      <section class="market-empty-state">
+        <div class="market-empty-grid flex min-h-[58vh] flex-col items-center justify-center px-8 py-12 text-center">
+          <span class="material-symbols-outlined mb-6 text-6xl text-slate-300 dark:text-slate-600">search_off</span>
+          <h2 class="mb-3 text-2xl font-bold tracking-tight text-slate-900 dark:text-white">No results found</h2>
+          <p class="mb-8 max-w-[280px] text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+            We couldn't find anything matching your search. Try adjusting your filters or using different keywords.
+          </p>
+
+          <button
+            type="button"
+            (click)="clearSearch()"
+            class="w-full max-w-[200px] rounded-xl bg-primary py-3.5 font-semibold text-white shadow-lg shadow-primary/25 transition-opacity active:scale-95 hover:opacity-90"
+          >
+            Clear Search
+          </button>
+        </div>
+      </section>
+    </ng-template>
+  </div>
+
+  <div *ngIf="isProductInfoOpen" class="product-overlay" (click)="closeProductInfo()">
+    <div class="product-popup" (click)="$event.stopPropagation()">
+      <app-market-product-info
+        *ngIf="selectedProduct"
+        [product]="selectedProduct"
+        (close)="closeProductInfo()"
+        (pay)="onPayProduct($event)"
+      ></app-market-product-info>
+    </div>
   </div>
 </ion-content>
 

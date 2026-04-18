@@ -1,0 +1,11 @@
+Free Work Asset Delivery
+Product: iOS Style Guide
+Package: Starter delivery bundle
+
+Included:
+- Typography and spacing notes
+- Surface and component checklist
+- Handoff reminders for implementation
+
+Use this file as the shipped sample package for checkout verification.
+Replace it with the final guide export when the full commercial asset is ready.

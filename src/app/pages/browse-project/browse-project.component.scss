@@ -1,0 +1,17 @@
+:host {
+  --primary-blue: #2563eb;
+  --accent-orange: #f97316;
+}
+
+.browse-content {
+  --background: #ffffff;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

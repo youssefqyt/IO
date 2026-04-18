@@ -46,6 +46,7 @@ export class InterestStartPage implements OnInit {
   }
 
   continue(): void {
-    this.router.navigateByUrl('/home');
+    localStorage.setItem('fw_interests_seen', 'true');
+    this.router.navigateByUrl('/guest');
   }
 }

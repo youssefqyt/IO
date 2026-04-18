@@ -1,0 +1,18 @@
+:host {
+  display: block;
+}
+
+.edit-profile-content {
+  --background: #f8fafc;
+}
+
+.textured-bg {
+  background-color: #ffffff;
+  background-image: radial-gradient(#e5e7eb 0.5px, transparent 0.5px);
+  background-size: 24px 24px;
+}
+
+.dark .textured-bg {
+  background-color: #0f172a;
+  background-image: radial-gradient(#1e293b 0.5px, transparent 0.5px);
+}

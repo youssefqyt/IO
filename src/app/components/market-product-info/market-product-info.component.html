@@ -1,0 +1,49 @@
+<div class="p-4">
+  <div class="mb-3 flex items-center justify-between">
+    <h2 class="text-lg font-bold text-slate-900">Product Details</h2>
+    <button type="button" (click)="onClose()" class="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100">
+      <span class="material-symbols-outlined text-slate-600">close</span>
+    </button>
+  </div>
+
+  <div class="overflow-hidden rounded-2xl border border-slate-100 bg-slate-100">
+    <img [src]="product.image" [alt]="product.alt" class="h-[180px] w-full object-cover" />
+  </div>
+
+  <div class="mt-4 space-y-3">
+    <div>
+      <p class="text-[10px] font-bold uppercase tracking-widest text-primary">{{ product.category || 'Digital Asset' }}</p>
+      <h3 class="text-xl font-bold text-slate-900">{{ product.title }}</h3>
+      <p class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">{{ product.studio }}</p>
+    </div>
+
+    <p class="text-sm leading-relaxed text-slate-600">
+      {{ product.description || 'Professional digital asset ready to use in your next project.' }}
+    </p>
+
+    <div *ngIf="product.includes?.length" class="rounded-xl bg-slate-50 p-3">
+      <p class="mb-2 text-xs font-bold uppercase tracking-widest text-slate-500">Includes</p>
+      <ul class="space-y-1.5">
+        <li *ngFor="let item of product.includes" class="flex items-center gap-2 text-sm text-slate-700">
+          <span class="material-symbols-outlined text-[16px] text-emerald-500">check_circle</span>
+          {{ item }}
+        </li>
+      </ul>
+    </div>
+
+    <div class="flex items-center justify-between rounded-xl border border-slate-100 bg-white p-3">
+      <div>
+        <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Price</p>
+        <p class="text-2xl font-black text-[#f97316]">{{ product.price }}</p>
+      </div>
+      <button
+        type="button"
+        (click)="onPay()"
+        class="rounded-xl bg-primary px-6 py-3 text-sm font-bold text-white shadow-[0_8px_18px_rgba(37,123,244,0.28)]"
+      >
+        Pay Now
+      </button>
+    </div>
+  </div>
+</div>
+

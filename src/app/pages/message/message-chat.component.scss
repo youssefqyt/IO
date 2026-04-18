@@ -1,0 +1,29 @@
+.message-page {
+  --background: transparent;
+}
+
+.pattern-bg {
+  background-image: radial-gradient(circle at 2px 2px, rgba(15, 23, 42, 0.05) 1.5px, transparent 0);
+  background-size: 24px 24px;
+}
+
+:host-context(.dark) .pattern-bg {
+  background-image: radial-gradient(circle at 2px 2px, rgba(148, 163, 184, 0.12) 1.5px, transparent 0);
+}
+
+.ios-blur {
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.rounded-chat {
+  border-radius: 1.25rem;
+}
+
+.chat-bubble-sent {
+  border-bottom-right-radius: 4px;
+}
+
+.chat-bubble-received {
+  border-bottom-left-radius: 4px;
+}

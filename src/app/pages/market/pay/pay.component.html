@@ -1,0 +1,221 @@
+<ion-content [fullscreen]="true" class="pay-content font-sans antialiased text-slate-900 dark:text-slate-100">
+  <div class="relative z-40 bg-brand-blue px-6 py-3">
+    <p class="text-center text-[11px] font-medium leading-snug text-white">
+      Transparency Notice: Free Work takes a 12% service fee to maintain our professional network.
+    </p>
+  </div>
+
+  <header *ngIf="viewState === 'checkout'" class="sticky top-0 z-30 border-b border-slate-100 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 px-6 py-4 backdrop-blur-xl">
+    <div class="flex items-center gap-4">
+      <button
+        type="button"
+        (click)="goBack()"
+        class="flex h-8 w-8 items-center justify-center rounded-full border border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800"
+      >
+        <span class="material-symbols-outlined text-[20px] text-slate-600 dark:text-slate-300">chevron_left</span>
+      </button>
+      <h1 class="text-lg font-semibold tracking-tight text-slate-900 dark:text-white">Secure Checkout</h1>
+    </div>
+  </header>
+
+  <main *ngIf="viewState === 'checkout'" class="relative z-10 hide-scrollbar px-6 py-8 pb-32">
+    <section class="mb-10">
+      <h2 class="mb-4 text-[11px] font-bold uppercase tracking-[0.15em] text-slate-400 dark:text-slate-500">Product Summary</h2>
+      <div class="flex items-center gap-4 rounded-[24px] border border-slate-100 dark:border-slate-700 bg-white/50 dark:bg-slate-800/60 p-4 shadow-sm backdrop-blur-sm">
+        <div class="h-16 w-16 flex-shrink-0 overflow-hidden rounded-2xl">
+          <img [src]="productImage" [alt]="productAlt" class="h-full w-full object-cover" />
+        </div>
+        <div class="flex-1">
+          <h3 class="text-sm font-semibold text-slate-800 dark:text-slate-100">{{ productTitle }}</h3>
+          <p class="text-[11px] font-medium text-slate-400 dark:text-slate-500">{{ license }}</p>
+        </div>
+        <div class="text-[15px] font-bold text-slate-900 dark:text-slate-100">{{ formatMoney(subtotal) }}</div>
+      </div>
+    </section>
+
+    <section class="mb-10">
+      <div class="mb-4 flex items-center justify-between">
+        <h2 class="text-[11px] font-bold uppercase tracking-[0.15em] text-slate-400 dark:text-slate-500">Payment Details</h2>
+        <div class="flex gap-1.5">
+          <span class="material-symbols-outlined text-lg text-slate-300">credit_card</span>
+          <span class="material-symbols-outlined text-lg text-slate-300">lock</span>
+        </div>
+      </div>
+      <div class="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-[12px] text-amber-800">
+        Test card: 4242 4242 4242 4242 | Expiry: 12/30 | CVV: 123
+      </div>
+      <div class="space-y-4">
+        <div>
+          <label class="mb-1.5 ml-1 block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Card Number</label>
+          <div class="relative">
+            <input
+              [(ngModel)]="cardNumber"
+              name="cardNumber"
+              type="text"
+              placeholder="0000 0000 0000 0000"
+              class="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-4 py-3.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-300 dark:placeholder-slate-500 outline-none transition-all focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20"
+            />
+            <div class="absolute right-4 top-1/2 flex -translate-y-1/2 gap-1">
+              <div class="h-4 w-6 rounded-[2px] bg-slate-200"></div>
+              <div class="h-4 w-6 rounded-[2px] bg-slate-300"></div>
+            </div>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="mb-1.5 ml-1 block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Expiry Date</label>
+            <input
+              [(ngModel)]="expiryDate"
+              name="expiryDate"
+              type="text"
+              placeholder="MM/YY"
+              class="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-4 py-3.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-300 dark:placeholder-slate-500 outline-none transition-all focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20"
+            />
+          </div>
+          <div>
+            <label class="mb-1.5 ml-1 block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">CVV</label>
+            <input
+              [(ngModel)]="cvv"
+              name="cvv"
+              type="password"
+              placeholder="123"
+              class="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-4 py-3.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-300 dark:placeholder-slate-500 outline-none transition-all focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20"
+            />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="mb-8">
+      <div class="rounded-[24px] border border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 p-6">
+        <div class="space-y-3">
+          <div class="flex items-center justify-between text-sm">
+            <span class="text-slate-500 dark:text-slate-400">Subtotal</span>
+            <span class="font-medium text-slate-900 dark:text-slate-100">{{ formatMoney(subtotal) }}</span>
+          </div>
+          <div class="flex items-center justify-between text-sm">
+            <span class="text-slate-500 dark:text-slate-400">Service Fee ({{ serviceFeePercent }}%)</span>
+            <span class="font-medium text-slate-900 dark:text-slate-100">{{ formatMoney(serviceFee) }}</span>
+          </div>
+          <div class="flex items-center justify-between border-t border-slate-200 dark:border-slate-700 pt-3">
+            <span class="text-sm font-bold text-slate-900 dark:text-slate-100">Total Amount</span>
+            <span class="text-xl font-bold text-brand-orange">{{ formatMoney(totalAmount) }}</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <button
+      type="button"
+      (click)="payAndDownload()"
+      [disabled]="isSubmitting"
+      class="mb-3 flex w-full items-center justify-center gap-2 rounded-[20px] bg-brand-orange py-4 text-sm font-bold text-white shadow-xl shadow-brand-orange/20 transition-transform active:scale-[0.98]"
+    >
+      <span class="material-symbols-outlined text-[20px]">download</span>
+      {{ isSubmitting ? 'Processing...' : 'Pay & Download' }}
+    </button>
+    <p *ngIf="paymentError" class="text-center text-sm font-semibold text-red-500">{{ paymentError }}</p>
+  </main>
+
+  <main *ngIf="viewState === 'failed'" class="relative z-10 flex flex-1 flex-col items-center overflow-y-auto px-8 pb-8 pt-12">
+    <div class="mb-8 flex h-20 w-20 items-center justify-center rounded-full bg-red-50">
+      <div class="flex h-14 w-14 items-center justify-center rounded-full bg-red-100">
+        <span class="material-symbols-outlined text-[32px] font-bold text-red-500">close</span>
+      </div>
+    </div>
+
+    <div class="mb-10 text-center">
+      <h1 class="mb-3 text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Payment Failed</h1>
+      <p class="mx-auto max-w-[280px] text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+        {{ paymentError || 'We were unable to process your payment. Please verify your card details or try a different payment method.' }}
+      </p>
+    </div>
+
+    <div class="mb-10 w-full rounded-[24px] border border-slate-100 dark:border-slate-700 bg-white/60 dark:bg-slate-800/60 p-5 shadow-sm backdrop-blur-md">
+      <div class="flex items-center gap-4">
+        <div class="h-14 w-14 flex-shrink-0 overflow-hidden rounded-xl bg-slate-100">
+          <img [src]="productImage" [alt]="productAlt" class="h-full w-full object-cover" />
+        </div>
+        <div class="flex-1">
+          <h3 class="text-[13px] font-semibold text-slate-800 dark:text-slate-100">{{ productTitle }}</h3>
+          <p class="text-[11px] font-medium text-slate-400 dark:text-slate-500">Checkout Attempt</p>
+        </div>
+        <div class="text-right">
+          <div class="text-[15px] font-bold text-slate-900 dark:text-slate-100">{{ formatMoney(totalAmount) }}</div>
+          <div class="text-[9px] font-bold uppercase tracking-wider text-red-400">Unpaid</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-auto w-full space-y-3">
+      <button
+        type="button"
+        (click)="tryAgain()"
+        class="flex w-full items-center justify-center gap-2 rounded-[20px] bg-brand-blue py-4 text-sm font-bold text-white shadow-xl shadow-brand-blue/20 transition-transform active:scale-[0.98]"
+      >
+        <span class="material-symbols-outlined text-[20px]">refresh</span>
+        Try Again
+      </button>
+      <button
+        type="button"
+        (click)="contactSupport()"
+        class="flex w-full items-center justify-center gap-2 rounded-[20px] border border-slate-200 dark:border-slate-700 bg-transparent py-4 text-sm font-bold text-slate-600 dark:text-slate-300 transition-transform active:scale-[0.98]"
+      >
+        <span class="material-symbols-outlined text-[20px]">support_agent</span>
+        Contact Support
+      </button>
+      <p *ngIf="statusMessage" class="text-center text-sm font-semibold text-brand-blue">{{ statusMessage }}</p>
+    </div>
+  </main>
+
+  <main *ngIf="viewState === 'success'" class="relative z-10 flex flex-1 flex-col items-center overflow-y-auto px-8 pb-8 pt-12">
+    <div class="mb-8 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-50">
+      <div class="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100">
+        <span class="material-symbols-outlined text-[32px] font-bold text-emerald-500">check</span>
+      </div>
+    </div>
+
+    <div class="mb-10 text-center">
+      <h1 class="mb-3 text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Payment Successful</h1>
+      <p class="mx-auto max-w-[280px] text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+        Your payment was completed successfully. You can now download your product.
+      </p>
+    </div>
+
+    <div class="mb-10 w-full rounded-[24px] border border-slate-100 dark:border-slate-700 bg-white/60 dark:bg-slate-800/60 p-5 shadow-sm backdrop-blur-md">
+      <div class="flex items-center gap-4">
+        <div class="h-14 w-14 flex-shrink-0 overflow-hidden rounded-xl bg-slate-100">
+          <img [src]="productImage" [alt]="productAlt" class="h-full w-full object-cover" />
+        </div>
+        <div class="flex-1">
+          <h3 class="text-[13px] font-semibold text-slate-800 dark:text-slate-100">{{ productTitle }}</h3>
+          <p class="text-[11px] font-medium text-slate-400 dark:text-slate-500">Paid Order</p>
+        </div>
+        <div class="text-right">
+          <div class="text-[15px] font-bold text-slate-900 dark:text-slate-100">{{ formatMoney(totalAmount) }}</div>
+          <div class="text-[9px] font-bold uppercase tracking-wider text-emerald-500">Paid</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-auto w-full space-y-3">
+      <button
+        type="button"
+        (click)="downloadAsset()"
+        class="flex w-full items-center justify-center gap-2 rounded-[20px] bg-brand-orange py-4 text-sm font-bold text-white shadow-xl shadow-brand-orange/20 transition-transform active:scale-[0.98]"
+      >
+        <span class="material-symbols-outlined text-[20px]">download</span>
+        Download Product
+      </button>
+      <button
+        type="button"
+        (click)="backToMarket()"
+        class="flex w-full items-center justify-center gap-2 rounded-[20px] border border-slate-200 dark:border-slate-700 bg-transparent py-4 text-sm font-bold text-slate-600 dark:text-slate-300 transition-transform active:scale-[0.98]"
+      >
+        <span class="material-symbols-outlined text-[20px]">storefront</span>
+        Back To Market
+      </button>
+      <p *ngIf="statusMessage" class="text-center text-sm font-semibold text-emerald-600">{{ statusMessage }}</p>
+    </div>
+  </main>
+</ion-content>

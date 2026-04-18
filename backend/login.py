@@ -27,8 +27,6 @@ def login_user(db):
 
     role = None
     user = None
-
-    # Search both collections by email.
     for collection_name, user_role in [("Freelancer", "freelancer"), ("Client", "client")]:
         found = db[collection_name].find_one({"email": email})
         if found:

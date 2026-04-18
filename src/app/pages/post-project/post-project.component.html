@@ -1,0 +1,178 @@
+<ion-content [fullscreen]="true" class="post-project-page bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100">
+  <div class="fixed inset-0 pointer-events-none opacity-20 dark:opacity-5 post-project-grid"></div>
+
+  <div class="post-project-shell relative mx-auto flex min-h-screen w-full flex-col overflow-hidden bg-white shadow-2xl dark:bg-[#0a1118]">
+    <header class="sticky top-0 z-30 flex items-center justify-between border-b border-slate-200/50 bg-white/80 px-6 pb-4 pt-14 backdrop-blur-md dark:border-slate-800/50 dark:bg-[#0a1118]/80">
+      <button
+        type="button"
+        (click)="goBack()"
+        class="flex h-10 w-10 items-center justify-start text-slate-500 transition-colors hover:text-primary"
+      >
+        <span class="material-icons-round">chevron_left</span>
+      </button>
+      <h1 class="text-lg font-semibold tracking-tight">Post Project</h1>
+      <div class="w-10"></div>
+    </header>
+
+    <main class="hide-scrollbar flex-1 overflow-y-auto px-6 pb-48 py-8">
+      <form class="space-y-8" (ngSubmit)="postProject()">
+        <section class="space-y-6">
+          <div>
+            <h2 class="mb-1 text-xs font-bold uppercase tracking-widest text-primary">Project Details</h2>
+            <p class="text-sm text-slate-500 dark:text-slate-400">Provide the essential information about your project.</p>
+          </div>
+
+          <div class="space-y-2">
+            <label class="text-sm font-medium text-slate-700 dark:text-slate-300" for="title">Project Title</label>
+            <input
+              id="title"
+              name="title"
+              [(ngModel)]="projectTitle"
+              class="post-project-field rounded-lg border-slate-200 bg-slate-50 px-4 py-3 text-sm transition-all focus:border-primary focus:ring-primary dark:border-slate-800 dark:bg-slate-900/50"
+              placeholder="e.g., Logo for a Tech Startup"
+              type="text"
+            />
+          </div>
+
+          <div class="space-y-2">
+            <label class="text-sm font-medium text-slate-700 dark:text-slate-300" for="projectType">Project Type</label>
+            <div class="post-project-select-shell">
+              <ion-select
+                id="projectType"
+                name="projectType"
+                interface="popover"
+                [(ngModel)]="projectType"
+                [interfaceOptions]="selectPopoverOptions"
+                class="post-project-ion-select"
+                toggleIcon="expand_more"
+              >
+                <ion-select-option *ngFor="let item of projectTypes" [value]="item.value">{{ item.label }}</ion-select-option>
+              </ion-select>
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <label class="text-sm font-medium text-slate-700 dark:text-slate-300" for="category">Category</label>
+            <div class="post-project-select-shell">
+              <ion-select
+                id="category"
+                name="category"
+                interface="popover"
+                [(ngModel)]="category"
+                [interfaceOptions]="selectPopoverOptions"
+                class="post-project-ion-select"
+                placeholder="Select a category"
+                toggleIcon="expand_more"
+              >
+                <ion-select-option *ngFor="let item of categories" [value]="item.value">{{ item.label }}</ion-select-option>
+              </ion-select>
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <label class="text-sm font-medium text-slate-700 dark:text-slate-300" for="description">Project Description</label>
+            <textarea
+              id="description"
+              name="description"
+              [(ngModel)]="description"
+              class="post-project-field resize-none rounded-lg border-slate-200 bg-slate-50 px-4 py-3 text-sm transition-all focus:border-primary focus:ring-primary dark:border-slate-800 dark:bg-slate-900/50"
+              placeholder="Describe the scope, deliverables, and specific requirements..."
+              rows="5"
+            ></textarea>
+          </div>
+        </section>
+
+        <section class="grid grid-cols-2 gap-4">
+          <div class="space-y-2">
+            <label class="text-sm font-medium text-slate-700 dark:text-slate-300" for="budget">Budget Range ($)</label>
+            <div class="relative">
+              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">$</span>
+              <input
+                id="budget"
+                name="budget"
+                [(ngModel)]="budget"
+                class="post-project-field rounded-lg border-slate-200 bg-slate-50 py-3 pl-8 pr-4 text-sm transition-all focus:border-primary focus:ring-primary dark:border-slate-800 dark:bg-slate-900/50"
+                placeholder="500"
+                type="number"
+                min="1"
+                step="1"
+              />
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <label class="text-sm font-medium text-slate-700 dark:text-slate-300" for="deadline">Deadline (Days)</label>
+            <div class="relative">
+              <input
+                id="deadline"
+                name="deadline"
+                [(ngModel)]="deadline"
+                class="post-project-field rounded-lg border-slate-200 bg-slate-50 px-4 py-3 text-sm transition-all focus:border-primary focus:ring-primary dark:border-slate-800 dark:bg-slate-900/50"
+                placeholder="14"
+                type="number"
+                min="1"
+                step="1"
+              />
+              <span class="material-icons-round absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">event</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="space-y-2 mb-16">
+          <label class="text-sm font-medium text-slate-700 dark:text-slate-300">Project Brief (Optional)</label>
+          <label class="group flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/50 p-8 transition-colors hover:border-primary/50 dark:border-slate-800 dark:bg-slate-900/30">
+            <input type="file" accept=".pdf,.png,.jpg,.jpeg" class="hidden" (change)="onBriefSelected($event)" />
+            <div class="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 transition-transform group-hover:scale-110">
+              <span class="material-icons-round text-primary">cloud_upload</span>
+            </div>
+            <p class="text-sm font-medium text-slate-600 dark:text-slate-300">
+              {{ isReadingBrief ? 'Loading file...' : (briefFileName || 'Tap to upload brief') }}
+            </p>
+            <p class="mt-1 text-center text-xs text-slate-400">Support PDF, PNG, or JPG (Max 10MB)</p>
+          </label>
+        </section>
+
+        <p *ngIf="successMessage" class="rounded-xl bg-emerald-50 px-4 py-3 text-center text-sm font-semibold text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">
+          {{ successMessage }}
+        </p>
+        <p *ngIf="submitError" class="rounded-xl bg-red-50 px-4 py-3 text-center text-sm font-semibold text-red-700 dark:bg-red-500/10 dark:text-red-300">
+          {{ submitError }}
+        </p>
+      </form>
+    </main>
+
+    <div class="pointer-events-none absolute bottom-[80px] left-0 right-0 bg-gradient-to-t from-white via-white/90 to-transparent p-6 dark:from-[#0a1118] dark:via-[#0a1118]/90">
+      <button
+        type="button"
+        (click)="postProject()"
+        [disabled]="isSubmitting || isReadingBrief"
+        class="pointer-events-auto flex w-full items-center justify-center rounded-xl bg-primary py-4 font-semibold text-white shadow-lg shadow-primary/25 transition-all active:scale-[0.98] hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-70"
+      >
+        <span>{{ isSubmitting ? 'Posting...' : (isReadingBrief ? 'Preparing file...' : 'Post Project') }}</span>
+      </button>
+    </div>
+
+    <nav class="ios-tab-bar absolute bottom-0 left-0 right-0 flex items-center justify-between border-t border-slate-200/50 bg-white/90 px-6 pb-8 pt-3 dark:border-slate-800/50 dark:bg-background-dark/90">
+      <button type="button" (click)="goTo('/home')" class="flex flex-col items-center gap-1 text-slate-400">
+        <span class="material-icons-round">home</span>
+        <span class="text-[10px] font-medium">Home</span>
+      </button>
+      <button type="button" (click)="goTo('/browse-project')" class="flex flex-col items-center gap-1 text-slate-400">
+        <span class="material-icons-round">search</span>
+        <span class="text-[10px] font-medium">Search</span>
+      </button>
+      <button type="button" (click)="goTo('/message')" class="flex flex-col items-center gap-1 text-slate-400">
+        <span class="material-icons-round">chat_bubble_outline</span>
+        <span class="text-[10px] font-medium">Message</span>
+      </button>
+      <button type="button" (click)="goTo('/market')" class="flex flex-col items-center gap-1 text-primary">
+        <span class="material-icons-round">storefront</span>
+        <span class="text-[10px] font-medium">Market</span>
+      </button>
+      <button type="button" (click)="goTo('/settings')" class="flex flex-col items-center gap-1 text-slate-400">
+        <span class="material-icons-round">settings</span>
+        <span class="text-[10px] font-medium">Settings</span>
+      </button>
+    </nav>
+  </div>
+</ion-content>

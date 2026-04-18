@@ -1,0 +1,77 @@
+:host {
+  display: block;
+}
+
+.post-project-page {
+  --background: transparent;
+}
+
+.post-project-shell {
+  width: min(100%, 430px);
+}
+
+.post-project-grid {
+  background-image: radial-gradient(#0d7ff2 0.5px, transparent 0.5px);
+  background-size: 24px 24px;
+}
+
+.post-project-field {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  border-width: 1px;
+}
+
+.post-project-select-shell {
+  width: 100%;
+  border: 1px solid rgb(226 232 240);
+  border-radius: 0.75rem;
+  background: rgb(248 250 252);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.post-project-select-shell:focus-within {
+  border-color: rgb(37 123 244);
+  box-shadow: 0 0 0 3px rgb(37 123 244 / 0.14);
+}
+
+.post-project-ion-select {
+  width: 100%;
+  min-height: 48px;
+  --padding-start: 1rem;
+  --padding-end: 1rem;
+  --padding-top: 0.75rem;
+  --padding-bottom: 0.75rem;
+  --placeholder-color: rgb(100 116 139);
+  --placeholder-opacity: 1;
+  --highlight-height: 0;
+  --background: transparent;
+  --color: rgb(15 23 42);
+  --border-width: 0;
+  --border-style: none;
+}
+
+.ios-tab-bar {
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+:host-context(.dark) .post-project-select-shell {
+  border-color: rgb(30 41 59);
+  background: rgb(15 23 42 / 0.78);
+}
+
+:host-context(.dark) .post-project-ion-select {
+  --color: rgb(226 232 240);
+  --placeholder-color: rgb(148 163 184);
+}

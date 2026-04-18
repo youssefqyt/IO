@@ -1,57 +1,54 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
 import { IonicModule } from '@ionic/angular';
+import { Router, RouterModule } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { MarketProduct, MarketProductCardComponent } from '../../components/market-product-card/market-product-card.component';
+import { MarketProductInfoComponent } from '../../components/market-product-info/market-product-info.component';
+import { environment } from '../../../environments/environment';
+
+interface MarketProductApiResponse {
+  id?: string;
+  title?: string;
+  studio?: string;
+  price?: string;
+  image?: string;
+  alt?: string;
+  category?: string;
+  description?: string;
+  includes?: string[];
+}
+
+interface StoredProfile {
+  id?: string;
+  fullName?: string;
+  role?: 'freelancer' | 'client';
+}
 
 @Component({
   selector: 'app-market',
   templateUrl: './market.component.html',
   styleUrls: ['./market.component.scss'],
   standalone: true,
-  imports: [CommonModule, IonicModule]
+  imports: [CommonModule, IonicModule, RouterModule, FormsModule, MarketProductCardComponent, MarketProductInfoComponent]
 })
-export class MarketComponent {
-  readonly categories = ['All Asset', 'Templates', 'Icons', '3D'];
-
-  readonly featuredAssets = [
-    {
-      title: 'SaaS UI Kit v2.0',
-      studio: 'MINIMAL STUDIO',
-      price: '$49.00',
-      image:
-        'https://lh3.googleusercontent.com/aida-public/AB6AXuDtU4_vmAtP94ImtXyt3prK4Qm8lpWzvhRDU0_PS7ZW_-bmUtbdxuLWRmFSzbFUd_VCWS1RPpDKQ7tcFNmTPC4_PW3jnixN_ahV3R_gtZVcIxh5l0xjP0x0Bn3G5VHRbgF9bq8IiHCkKuw7_YrpBC7moFqjFzeDc7rFjSTExUdjCDZP5LBeL27kNvPqrBgEKjNDWEy3HUGmgt44B3YbHYY2SN2HVQ8NmJC5BzxsNhcozjpXF0ZhELA-CkqWbS-AU_SrmJM-4kiupYu7',
-      alt: 'SaaS UI kit cover'
-    },
-    {
-      title: 'React Dashboard',
-      studio: 'DEVFLOW',
-      price: '$24.00',
-      image:
-        'https://lh3.googleusercontent.com/aida-public/AB6AXuCudje5pxu4v3buLiUtmbNzcIlzdy6oX0aRus1Q_6gZdB4-LllsJipB1pKzNIAWCh-1U2TbrnRBmLggI3-5p1maOt0fuuxYfNOgQHoVY0krsZIAIx2prK3_dX1uJhGhRW_wdjfUdGxkglnOPaGqLeBhw2fgwYcztXFkm2ouAC2tiBkEbV8wLVbHK1PaKxr-NaIRuQVBlOD1qpZOlAk2EEcRvSv1bgIClqOEqQZaHxt52gJxffgcHvfo0fciPj1URm22sJDKSbKXXTxl',
-      alt: 'React dashboard cover'
-    },
-    {
-      title: '3D Clay Icons',
-      studio: 'SHAPELABS',
-      price: '$19.00',
-      image:
-        'https://lh3.googleusercontent.com/aida-public/AB6AXuDFCSZx1My_ZaCeWfy17loFO0z1TFa3-4uUqQdxQv50r-wNbeqvMsWcXewD1iSuOdRu5orZ_aM5xXnojf0phhyEo6h8nRcB1vmO3MplubnPea1ZL8yfeJGMC8vUwyjgMbN5WI6CGVL2IGOUCDRdDMTCsnwn19yfpPn-9PGa-6Mta__cMli-D_cpOMuyicfufwXg2CKiZJLEvwv-MmBK56oJhniLaz6bzu-A1VvFoaPScEb95TcV093DDKwSMbwNWv_6JEFRxcqg546O',
-      alt: '3D clay icons cover'
-    },
-    {
-      title: 'iOS Style Guide',
-      studio: 'APPLEDEV',
-      price: '$35.00',
-      image:
-        'https://lh3.googleusercontent.com/aida-public/AB6AXuBW8GyON_mDk_aZeMUbynLm70Nchn-ob8Q0BpQFP8Bm0z226wWjddO_fjKReHftF94vYIZO7PCYAImjthG825seDhkvY5lp0uWoTMzWsa1hCI7ljFLZztUkJILI72D7qGCL6x9OWm7LH8mahCoMQ732JsIJd_F6cPZtfCRDr6nc4VZ3Vom3V9QiiFieT9W2hL4v2VtvMOc8t5whwc4t-ZX0ZY3PgOQEsypoKjUIt1zF5xtSEqFHfSPCMXrQ_wWdbdM3zF_AUtYdVZBR',
-      alt: 'iOS style guide cover'
-    }
-  ];
+export class MarketComponent implements OnInit {
+  paymentMessage = '';
+  isProductInfoOpen = false;
+  selectedProduct: MarketProduct | null = null;
+  searchTerm = '';
+  selectedCategory = 'All Assets';
+  readonly categories = ['All Assets', 'Templates', 'Icons', '3D'];
+  featuredAssets: MarketProduct[] = [];
 
   readonly activeOffers = [
     {
       type: 'UX/UI DESIGN',
       mode: 'REMOTE',
       budget: '$2,400',
+      deadline: '14 Days',
+      postedAt: '2h ago',
       title: 'Modern SaaS Landing Page',
       desc: 'Looking for a designer to create a clean, minimalist landing page for a fintech startup.'
     },
@@ -59,8 +56,107 @@ export class MarketComponent {
       type: 'DEVELOPMENT',
       mode: 'CONTRACT',
       budget: '$4,500',
+      deadline: '21 Days',
+      postedAt: '5h ago',
       title: 'E-commerce Mobile App',
       desc: 'Full-stack developer needed for a React Native fashion marketplace application.'
     }
   ];
+
+  constructor(
+    private readonly router: Router,
+    private readonly http: HttpClient
+  ) {}
+
+  ngOnInit(): void {
+    this.loadProducts();
+  }
+
+  get filteredAssets(): MarketProduct[] {
+    const query = this.searchTerm.trim().toLowerCase();
+
+    return this.featuredAssets.filter((asset) => {
+      const matchesCategory =
+        this.selectedCategory === 'All Assets' ||
+        asset.category?.toLowerCase() === this.selectedCategory.toLowerCase();
+
+      if (!matchesCategory) {
+        return false;
+      }
+
+      if (!query) {
+        return true;
+      }
+
+      const searchableText = [
+        asset.title,
+        asset.studio,
+        asset.category,
+        asset.description,
+        ...(asset.includes ?? []),
+      ]
+        .join(' ')
+        .toLowerCase();
+
+      return searchableText.includes(query);
+    });
+  }
+
+  get hasNoResults(): boolean {
+    return this.filteredAssets.length === 0;
+  }
+
+  selectCategory(category: string): void {
+    this.selectedCategory = category;
+  }
+
+  clearSearch(): void {
+    this.searchTerm = '';
+    this.selectedCategory = 'All Assets';
+  }
+
+  private loadProducts(): void {
+    this.http.get<MarketProductApiResponse[]>(`${environment.apiUrl}/marketplace`).subscribe({
+      next: (products) => {
+        this.featuredAssets = products.map((product) => ({
+          title: product.title || 'Untitled product',
+          studio: product.studio || 'MARKETPLACE',
+          price: product.price || '',
+          image: product.image || '',
+          alt: product.alt || `${product.title || 'Marketplace'} preview`,
+          category: product.category || 'Digital Asset',
+          description: product.description || '',
+          includes: Array.isArray(product.includes) ? product.includes : [],
+        }));
+      },
+      error: (error) => {
+        console.error('Failed to load marketplace products', error);
+        this.featuredAssets = [];
+      }
+    });
+  }
+
+  onPayProduct(product: MarketProduct): void {
+    this.paymentMessage = '';
+    this.isProductInfoOpen = false;
+    void this.router.navigate(['/pay'], {
+      queryParams: {
+        title: product.title,
+        price: product.price,
+        image: product.image,
+        alt: product.alt,
+        license: 'Single License'
+      }
+    });
+  }
+
+  openProductInfo(product: MarketProduct): void {
+    this.selectedProduct = product;
+    this.isProductInfoOpen = true;
+  }
+
+  closeProductInfo(): void {
+    this.isProductInfoOpen = false;
+    this.selectedProduct = null;
+  }
 }

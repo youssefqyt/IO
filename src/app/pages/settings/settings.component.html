@@ -16,8 +16,8 @@
           </div>
         </div>
         <div>
-          <h3 class="font-bold text-lg text-slate-900 dark:text-white">Alex Sterling</h3>
-          <p class="text-sm text-slate-500 dark:text-slate-400 font-medium">Senior Brand Designer</p>
+          <h3 class="font-bold text-lg text-slate-900 dark:text-white">{{ profile.fullName }}</h3>
+          <p class="text-sm text-slate-500 dark:text-slate-400 font-medium">{{ profile.title || (profile.role === 'client' ? 'Client Account' : 'Freelancer') }}</p>
         </div>
       </section>
 
@@ -58,9 +58,19 @@
               </div>
               <span class="font-medium text-[15px]">Dark Mode</span>
             </div>
-            <div class="w-12 h-6 bg-slate-200 dark:bg-primary rounded-full relative transition-colors cursor-pointer">
-              <div class="absolute right-1 top-1 w-4 h-4 bg-white rounded-full shadow-sm"></div>
-            </div>
+            <button
+              type="button"
+              (click)="toggleDarkMode()"
+              class="relative h-6 w-12 rounded-full transition-colors"
+              [class.bg-primary]="isDarkMode"
+              [class.bg-slate-200]="!isDarkMode"
+            >
+              <div
+                class="absolute top-1 h-4 w-4 rounded-full bg-white shadow-sm transition-all"
+                [class.right-1]="isDarkMode"
+                [class.left-1]="!isDarkMode"
+              ></div>
+            </button>
           </div>
           <div class="h-px bg-slate-200/50 dark:bg-slate-800 ml-14"></div>
           <button class="w-full flex items-center justify-between py-4 px-2 group">

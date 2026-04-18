@@ -1,0 +1,26 @@
+<article class="rounded-[1.25rem] border border-slate-100 bg-white p-5 shadow-[0_4px_10px_rgba(15,23,42,0.04)]">
+  <div class="mb-3 flex items-start justify-between">
+    <div class="flex items-center gap-2">
+      <span class="rounded px-2 py-1 text-[10px] font-bold uppercase tracking-wider" [ngClass]="project.badgeClass">{{ project.type }}</span>
+      <span class="text-xs text-slate-400">• {{ project.time }}</span>
+    </div>
+    <span class="material-symbols-outlined text-slate-300">bookmark</span>
+  </div>
+
+  <h2 class="mb-2 text-[18px] font-bold leading-snug text-slate-900">{{ project.title }}</h2>
+  <p class="mb-4 line-clamp-2 text-[13px] leading-relaxed text-slate-500">{{ project.description }}</p>
+
+  <div class="flex items-center justify-between border-t border-slate-100 pt-4">
+    <div class="flex flex-col">
+      <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400">{{ project.label }}</span>
+      <span class="text-[30px] font-black leading-none text-slate-900">{{ project.amount }}</span>
+    </div>
+    <button
+      routerLink="/submit-proposal"
+      [queryParams]="{ id: project.id || '', title: project.title, budget: project.amount, deadline: project.deadline, time: project.time, briefFileName: project.briefFileName || '' }"
+      class="rounded-xl bg-primary px-6 py-3 text-sm font-bold text-white shadow-[0_8px_18px_rgba(37,99,235,0.28)]"
+    >
+      Send Proposal
+    </button>
+  </div>
+</article>

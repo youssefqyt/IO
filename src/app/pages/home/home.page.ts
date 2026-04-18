@@ -1,5 +1,11 @@
 import { Component } from '@angular/core';
 
+interface HomeProfile {
+  fullName: string;
+  role: 'freelancer' | 'client';
+  title?: string;
+}
+
 @Component({
   selector: 'app-home',
   templateUrl: 'home.page.html',
@@ -7,6 +13,12 @@ import { Component } from '@angular/core';
   standalone: false,
 })
 export class HomePage {
+  profile: HomeProfile = {
+    fullName: 'Alex Sterling',
+    role: 'freelancer',
+    title: 'Senior Brand Designer'
+  };
+
   readonly recentProjects = [
     {
       title: 'Brand Identity Design',
@@ -45,5 +57,41 @@ export class HomePage {
     }
   ];
 
-  constructor() {}
+  constructor() {
+    this.loadProfile();
+  }
+
+  ionViewWillEnter(): void {
+    this.loadProfile();
+  }
+
+  get firstName(): string {
+    const trimmed = this.profile.fullName.trim();
+    return trimmed ? trimmed.split(' ')[0] : 'there';
+  }
+
+  get modeLabel(): string {
+    return this.profile.role === 'client' ? 'Client Mode' : 'Freelancer Mode';
+  }
+
+  get isClientMode(): boolean {
+    return this.profile.role === 'client';
+  }
+
+  private loadProfile(): void {
+    const raw = localStorage.getItem('fw_profile');
+    if (!raw) {
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(raw) as Partial<HomeProfile>;
+      this.profile = {
+        fullName: parsed.fullName || this.profile.fullName,
+        role: parsed.role === 'client' ? 'client' : 'freelancer',
+        title: parsed.title || this.profile.title
+      };
+    } catch {
+    }
+  }
 }

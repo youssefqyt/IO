@@ -7,12 +7,44 @@ const routes: Routes = [
     loadChildren: () => import('./pages/home/home.module').then( m => m.HomePageModule)
   },
   {
+    path: 'guest',
+    loadComponent: () => import('./guest/guest.component').then( m => m.GuestComponent)
+  },
+  {
     path: 'market',
     loadComponent: () => import('./pages/market/market.component').then( m => m.MarketComponent)
   },
   {
+    path: 'add-product',
+    loadComponent: () => import('./pages/add-product/add-product.component').then( m => m.AddProductComponent)
+  },
+  {
+    path: 'admin',
+    loadComponent: () => import('./admin/admin.component').then( m => m.AdminComponent)
+  },
+  {
+    path: 'browse-project',
+    loadComponent: () => import('./pages/browse-project/browse-project.component').then( m => m.BrowseProjectComponent)
+  },
+  {
+    path: 'submit-proposal',
+    loadComponent: () => import('./pages/submit-proposal/submit-proposal.component').then( m => m.SubmitProposalComponent)
+  },
+  {
+    path: 'post-project',
+    loadComponent: () => import('./pages/post-project/post-project.component').then( m => m.PostProjectComponent)
+  },
+  {
+    path: 'pay',
+    loadComponent: () => import('./pages/market/pay/pay.component').then( m => m.PayComponent)
+  },
+  {
     path: 'message',
     loadComponent: () => import('./pages/message/message.component').then( m => m.MessageComponent)
+  },
+  {
+    path: 'message/chat',
+    loadComponent: () => import('./pages/message/message-chat.component').then( m => m.MessageChatComponent)
   },
   {
     path: 'myjob',
@@ -27,8 +59,16 @@ const routes: Routes = [
     loadComponent: () => import('./pages/profile/profile.component').then( m => m.ProfileComponent)
   },
   {
+    path: 'edit-profile',
+    loadComponent: () => import('./pages/profile/edit-profile.component').then( m => m.EditProfileComponent)
+  },
+  {
     path: 'accounte-securite',
     loadComponent: () => import('./pages/settings/accounte-securite/accounte-securite.component').then( m => m.AccounteSecuriteComponent)
+  },
+  {
+    path: 'change-password',
+    loadComponent: () => import('./pages/settings/accounte-securite/changepassword/changepassword.component').then( m => m.ChangepasswordComponent)
   },
   {
     path: 'start',
@@ -64,4 +104,3 @@ const routes: Routes = [
   exports: [RouterModule]
 })
 export class AppRoutingModule { }
-

@@ -1,0 +1,21 @@
+:host {
+  display: block;
+}
+
+.proposal-content {
+  --background: #f5f7f8;
+}
+
+.proposal-content::part(scroll) {
+  background-image: radial-gradient(#d1d5db 0.5px, transparent 0.5px);
+  background-size: 16px 16px;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

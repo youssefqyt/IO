@@ -1,0 +1,10 @@
+<svg fill="none" height="80" viewBox="0 0 100 80" width="100" xmlns="http://www.w3.org/2000/svg">
+  <path d="M20 10C20 4.47715 24.4772 0 30 0H70C75.5228 0 80 4.47715 80 10V20C80 25.5228 75.5228 30 70 30H45V45H65C70.5228 45 75 49.4772 75 55V65C75 70.5228 70.5228 75 65 75H30C24.4772 75 20 70.5228 20 65V10Z" fill="url(#brandGradient)"/>
+  <path d="M50 35L65 65L80 35L95 65" stroke="#F97316" stroke-linecap="round" stroke-linejoin="round" stroke-width="12"/>
+  <defs>
+    <linearGradient gradientUnits="userSpaceOnUse" id="brandGradient" x1="20" x2="80" y1="0" y2="75">
+      <stop stop-color="#2563EB"/>
+      <stop offset="1" stop-color="#1D4ED8"/>
+    </linearGradient>
+  </defs>
+</svg>

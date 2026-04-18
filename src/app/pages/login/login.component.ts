@@ -27,7 +27,6 @@ export class LoginComponent {
     password: '',
     general: ''
   };
-
   constructor(
     private readonly http: HttpClient,
     private readonly router: Router
@@ -49,6 +48,7 @@ export class LoginComponent {
         }
         if (res.user) {
           localStorage.setItem('fw_profile', JSON.stringify({
+            id: res.user.id,
             fullName: res.user.fullName,
             email: res.user.email,
             role: res.user.role,
@@ -70,5 +70,9 @@ export class LoginComponent {
         }
       }
     });
+  }
+
+  skipToTrending(): void {
+    this.router.navigateByUrl('/guest');
   }
 }

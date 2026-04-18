@@ -3,12 +3,10 @@
     <div class="dot-pattern"></div>
 
     <header class="topbar">
-      <button class="icon-btn">
+      <button class="icon-btn" (click)="goBack()">
         <span class="material-icons-round">arrow_back_ios_new</span>
       </button>
-      <button class="icon-btn">
-        <span class="material-icons-round">share</span>
-      </button>
+      <div class="icon-spacer"></div>
     </header>
 
     <main class="profile-body">
@@ -25,7 +23,7 @@
         </div>
 
         <h1>{{ profile.fullName }}</h1>
-        <p class="job-title">{{ profile.role === 'freelancer' ? 'Freelancer' : 'Client' }}</p>
+        <p class="job-title">{{ profile.title || (profile.role === 'freelancer' ? 'Freelancer' : 'Client') }}</p>
 
         <div class="badges">
           <span class="badge badge-active">ACTIVE</span>
@@ -73,7 +71,7 @@
         <button class="outline-btn">See All Reviews</button>
       </section>
 
-      <button class="primary-btn">
+      <button class="primary-btn" routerLink="/edit-profile">
         <span class="material-symbols-outlined">edit</span>
         Edit Profile
       </button>
@@ -93,16 +91,25 @@
             <span class="label">Role</span>
             <span class="value">{{ profile.role | titlecase }}</span>
           </div>
+          <div class="info-row">
+            <span class="label">CV</span>
+            <button
+              type="button"
+              (click)="openCvPreview()"
+              [disabled]="!profile.cvFileData"
+              class="value text-right"
+              [class.opacity-50]="!profile.cvFileData"
+            >
+              {{ profile.cvFileName || 'Not uploaded' }}
+            </button>
+          </div>
         </div>
       </section>
 
       <section class="block">
         <h2>BIO</h2>
         <div class="panel">
-          <p>
-            Passionate designer with 8+ years of experience in creating cohesive
-            brand identities and intuitive digital experiences.
-          </p>
+          <p>{{ profile.bio || 'No bio added yet.' }}</p>
         </div>
       </section>
 
@@ -113,5 +120,23 @@
         </div>
       </section>
     </main>
+  </div>
+
+  <div *ngIf="showCvPreview" class="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/70 p-4">
+    <div class="flex max-h-[85vh] w-full max-w-md flex-col overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-slate-900">
+      <div class="flex items-center justify-between border-b border-slate-100 px-5 py-4 dark:border-slate-800">
+        <div>
+          <h3 class="text-base font-bold text-slate-900 dark:text-white">Uploaded CV</h3>
+          <p class="text-xs text-slate-400">{{ profile.cvFileName }}</p>
+        </div>
+        <button type="button" (click)="closeCvPreview()" class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <div class="min-h-[60vh] bg-slate-50 dark:bg-slate-950">
+        <iframe *ngIf="safeCvUrl" [src]="safeCvUrl" title="Uploaded CV preview" class="h-[60vh] w-full border-0"></iframe>
+      </div>
+    </div>
   </div>
 </ion-content>

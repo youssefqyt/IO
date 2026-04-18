@@ -1,8 +1,3 @@
----
-description: Repository Information Overview
-alwaysApply: true
----
-
 # ionic-app-base Information
 
 ## Summary

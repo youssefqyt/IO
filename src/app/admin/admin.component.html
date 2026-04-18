@@ -1,0 +1,172 @@
+<ion-content [fullscreen]="true" class="admin-content font-display antialiased text-slate-900 dark:text-slate-100 bg-background-light dark:bg-background-dark">
+  <div class="relative min-h-screen max-w-md mx-auto overflow-y-auto pb-24 bg-background-light dark:bg-background-dark shadow-2xl border-x border-slate-200 dark:border-slate-800">
+    <div class="absolute inset-0 pattern-bg pointer-events-none"></div>
+
+    <header class="sticky top-0 z-30 bg-white/80 dark:bg-slate-900/80 ios-blur border-b border-slate-200 dark:border-slate-800 px-6 pt-12 pb-4">
+      <div class="flex items-center justify-between mb-2">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8">
+            <svg viewBox="0 0 100 80" xmlns="http://www.w3.org/2000/svg">
+              <path d="M20 10C20 4.47715 24.4772 0 30 0H70C75.5228 0 80 4.47715 80 10V20C80 25.5228 75.5228 30 70 30H45V45H65C70.5228 45 75 49.4772 75 55V65C75 70.5228 70 75 65 75H30C24.4772 75 20 70.5228 20 65V10Z" fill="#2563EB"></path>
+              <path d="M50 35L65 65L80 35L95 65" stroke="#F97316" stroke-linecap="round" stroke-linejoin="round" stroke-width="12"></path>
+            </svg>
+          </div>
+          <div>
+            <h1 class="text-xl font-bold tracking-tight">Admin</h1>
+            <p class="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Moderation Portal</p>
+          </div>
+        </div>
+        <button class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+          <span class="material-symbols-outlined text-slate-600 dark:text-slate-300">notifications</span>
+        </button>
+      </div>
+      <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+        Validate freelancer accounts, approve new gig creation, and review product submissions from the marketplace.
+      </p>
+    </header>
+
+    <main class="relative z-10 px-4 py-6">
+      <section *ngIf="selectedView === 'dashboard' || selectedView === 'review'">
+        <div class="grid grid-cols-2 gap-4 mb-8">
+          <div *ngFor="let stat of quickStats" class="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-slate-500 text-xs font-semibold uppercase tracking-wider">{{ stat.label }}</span>
+              <span
+                *ngIf="stat.tone === 'success'; else statIcon"
+                class="w-2 h-2 rounded-full bg-emerald-500"
+              ></span>
+              <ng-template #statIcon>
+                <span class="material-symbols-outlined text-xs text-primary">{{ stat.icon }}</span>
+              </ng-template>
+            </div>
+            <div class="text-2xl font-bold">{{ stat.value }}</div>
+            <div
+              class="text-[10px] font-medium flex items-center gap-1 mt-1"
+              [class.text-emerald-500]="stat.tone === 'success'"
+              [class.text-primary]="stat.tone === 'primary'"
+            >
+              <span class="material-symbols-outlined text-[14px]">{{ stat.icon }}</span>
+              {{ stat.meta }}
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-3 mb-7">
+          <article class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-3">
+            <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">Accounts</p>
+            <p class="mt-2 text-xl font-black text-slate-900 dark:text-white">{{ pendingAccountsCount }}</p>
+            <p class="text-[11px] text-slate-500 dark:text-slate-400">Need identity validation</p>
+          </article>
+          <article class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-3">
+            <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">Gigs</p>
+            <p class="mt-2 text-xl font-black text-slate-900 dark:text-white">{{ pendingGigsCount }}</p>
+            <p class="text-[11px] text-slate-500 dark:text-slate-400">New service offers pending</p>
+          </article>
+          <article class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-3">
+            <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">Products</p>
+            <p class="mt-2 text-xl font-black text-slate-900 dark:text-white">{{ pendingProductsCount }}</p>
+            <p class="text-[11px] text-slate-500 dark:text-slate-400">Marketplace items waiting</p>
+          </article>
+        </div>
+
+        <div class="rounded-2xl border border-primary/10 bg-primary/5 dark:bg-primary/10 px-4 py-3 mb-8">
+          <p class="text-[11px] font-bold uppercase tracking-[0.14em] text-primary mb-1">Activity</p>
+          <p class="text-sm text-slate-700 dark:text-slate-200">{{ activityMessage }}</p>
+        </div>
+
+        <div class="flex items-center justify-between mb-4 px-2">
+          <h2 class="text-sm font-bold uppercase tracking-widest text-slate-400">Pending Approvals</h2>
+          <span class="bg-primary/10 text-primary text-[10px] px-2 py-0.5 rounded-full font-bold">{{ pendingItems.length }} items</span>
+        </div>
+
+        <div *ngIf="pendingItems.length; else reviewComplete" class="space-y-4">
+          <div *ngFor="let item of pendingItems; trackBy: trackById" class="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
+            <div class="flex gap-4 mb-4">
+              <div class="w-16 h-16 rounded-xl flex-shrink-0 flex items-center justify-center overflow-hidden bg-slate-100 dark:bg-slate-700">
+                <span class="material-symbols-outlined text-slate-400">{{ item.icon }}</span>
+              </div>
+              <div class="flex-1">
+                <div class="flex items-center gap-2 mb-1">
+                  <span class="approval-badge text-[9px] font-bold px-1.5 py-0.5 rounded uppercase" [ngClass]="item.badgeClass">{{ item.kind }}</span>
+                  <span class="text-[10px] text-slate-400 font-medium">{{ item.submittedAt }}</span>
+                </div>
+                <h3 class="text-sm font-bold leading-tight">{{ item.title }}</h3>
+                <p class="text-xs text-slate-500 mt-1">By {{ item.author }}</p>
+                <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">{{ item.note }}</p>
+              </div>
+            </div>
+            <div class="flex gap-2">
+              <button
+                type="button"
+                (click)="moderate(item, 'approved')"
+                class="flex-1 bg-primary text-white text-xs font-bold py-3 rounded-xl shadow-lg shadow-primary/20 hover:opacity-90 transition-opacity"
+              >
+                Approve
+              </button>
+              <button
+                type="button"
+                (click)="moderate(item, 'rejected')"
+                class="flex-1 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-bold py-3 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+              >
+                Reject
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section *ngIf="selectedView === 'stats'" class="space-y-4">
+        <div class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5">
+          <h2 class="text-sm font-bold uppercase tracking-[0.14em] text-slate-400 mb-4">Moderation Snapshot</h2>
+          <div class="grid grid-cols-3 gap-3">
+            <div class="rounded-xl bg-slate-50 dark:bg-slate-900 px-3 py-4">
+              <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">Pending</p>
+              <p class="mt-2 text-2xl font-black">{{ pendingItems.length }}</p>
+            </div>
+            <div class="rounded-xl bg-slate-50 dark:bg-slate-900 px-3 py-4">
+              <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">Approved</p>
+              <p class="mt-2 text-2xl font-black text-emerald-500">{{ approvedCount }}</p>
+            </div>
+            <div class="rounded-xl bg-slate-50 dark:bg-slate-900 px-3 py-4">
+              <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">Rejected</p>
+              <p class="mt-2 text-2xl font-black text-rose-500">{{ rejectedCount }}</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section *ngIf="selectedView === 'config'" class="space-y-4">
+        <div class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5">
+          <h2 class="text-sm font-bold uppercase tracking-[0.14em] text-slate-400 mb-3">Admin Rules</h2>
+          <div class="space-y-3 text-sm text-slate-600 dark:text-slate-300">
+            <div class="rounded-xl bg-slate-50 dark:bg-slate-900 px-4 py-3">Freelancer accounts must include identity details and a complete profile.</div>
+            <div class="rounded-xl bg-slate-50 dark:bg-slate-900 px-4 py-3">Gig creation is reviewed for clarity, originality, and valid pricing.</div>
+            <div class="rounded-xl bg-slate-50 dark:bg-slate-900 px-4 py-3">New marketplace products require source files, previews, and a clean description.</div>
+          </div>
+        </div>
+      </section>
+
+      <ng-template #reviewComplete>
+        <section class="rounded-3xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-6 py-12 text-center">
+          <span class="material-symbols-outlined text-5xl text-emerald-500 mb-4">task_alt</span>
+          <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-2">Queue is clear</h3>
+          <p class="text-sm text-slate-500 dark:text-slate-400">All freelancer accounts, gigs, and new products have been reviewed.</p>
+        </section>
+      </ng-template>
+    </main>
+
+    <nav class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-white/80 dark:bg-slate-900/80 ios-blur border-t border-slate-200 dark:border-slate-800 px-8 py-4 flex items-center justify-between z-40">
+      <button
+        *ngFor="let view of views"
+        type="button"
+        (click)="setView(view.id)"
+        class="flex flex-col items-center gap-1 transition-colors"
+        [class.text-primary]="selectedView === view.id"
+        [class.text-slate-400]="selectedView !== view.id"
+      >
+        <span class="material-symbols-outlined">{{ view.icon }}</span>
+        <span class="text-[10px] font-bold">{{ view.label }}</span>
+      </button>
+    </nav>
+  </div>
+</ion-content>

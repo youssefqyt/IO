@@ -1,0 +1,11 @@
+Free Work Asset Delivery
+Product: React Dashboard
+Package: Starter delivery bundle
+
+Included:
+- Dashboard module inventory
+- Widget layout notes
+- Component delivery checklist
+
+Use this file as the shipped sample package for checkout verification.
+Replace it with the final source bundle when the full commercial asset is ready.

@@ -16,7 +16,17 @@ export class StartComponent  implements OnInit {
 
   ngOnInit() {
     setTimeout(() => {
-      this.router.navigate(['/interest-start']);
+      const token = localStorage.getItem('fw_token');
+      const profile = localStorage.getItem('fw_profile');
+      const hasSavedLoginAndUser = !!token && !!profile;
+      const hasSeenInterests = localStorage.getItem('fw_interests_seen') === 'true';
+
+      if (hasSavedLoginAndUser) {
+        this.router.navigate(['/home']);
+        return;
+      }
+
+      this.router.navigate([hasSeenInterests ? '/guest' : '/interest-start']);
     }, 3000);
   }
 }

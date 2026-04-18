@@ -1,0 +1,11 @@
+Free Work Asset Delivery
+Product: 3D Clay Icons
+Package: Starter delivery bundle
+
+Included:
+- Icon pack manifest
+- Export readiness checklist
+- Usage notes for app and web previews
+
+Use this file as the shipped sample package for checkout verification.
+Replace it with the final icon archive when the full commercial asset is ready.

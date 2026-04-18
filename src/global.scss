@@ -80,6 +80,16 @@ select:focus,
   box-shadow: none !important;
 }
 
+ion-popover.post-project-select-popover {
+  --width: min(92vw, 320px);
+  --max-width: calc(100vw - 1rem);
+}
+
+ion-popover.post-project-select-popover::part(content) {
+  width: min(92vw, 320px);
+  max-width: calc(100vw - 1rem);
+}
+
 /**
  * Ionic Dark Mode
  * -----------------------------------------------------
@@ -88,8 +98,8 @@ select:focus,
  */
 
 /* @import "@ionic/angular/css/palettes/dark.always.css"; */
-/* @import "@ionic/angular/css/palettes/dark.class.css"; */
-@import "@ionic/angular/css/palettes/dark.system.css";
+@import "@ionic/angular/css/palettes/dark.class.css";
+/* @import "@ionic/angular/css/palettes/dark.system.css"; */
 
 
 

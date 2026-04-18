@@ -21,7 +21,6 @@ export class SignComponent {
   email: string = '';
   password: string = '';
 
-  // Structured errors
   formErrors: any = {
     fullName: '',
     email: '',
@@ -30,7 +29,6 @@ export class SignComponent {
     general: ''
   };
 
-  // Success message
   successMessage: string = '';
 
   constructor(private http: HttpClient, private router: Router) {}
@@ -41,7 +39,6 @@ export class SignComponent {
 
   signup() {
 
-    // Reset errors and success
     this.formErrors = { fullName: '', email: '', password: '', role: '', general: '' };
     this.successMessage = '';
     this.isLoading = true;
@@ -59,11 +56,10 @@ export class SignComponent {
         next: (res: any) => {
           this.isLoading = false;
 
-          // إذا الكل صحيح
           this.successMessage = res?.message || "Compte created";
 
-          // Keep profile data available for profile page display.
           const createdProfile = {
+            id: res?.user?.id || '',
             fullName: this.fullName.trim(),
             email: this.email.trim(),
             role: this.selectedRole,
@@ -73,7 +69,6 @@ export class SignComponent {
           };
           localStorage.setItem('fw_profile', JSON.stringify(createdProfile));
 
-          // Reset form
           this.fullName = '';
           this.email = '';
           this.password = '';
@@ -88,10 +83,8 @@ export class SignComponent {
           console.log("Full error response:", err);
 
           if (err.status === 400 && err.error?.errors) {
-            // Map errors from API
             this.formErrors = { ...this.formErrors, ...err.error.errors };
           } else {
-            // Unexpected errors
             this.formErrors.general = "Something went wrong. Please try again later.";
           }
         }

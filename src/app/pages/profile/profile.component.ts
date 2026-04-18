@@ -1,12 +1,19 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IonicModule } from '@ionic/angular';
+import { Location } from '@angular/common';
+import { RouterModule } from '@angular/router';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 
 interface ProfileData {
   fullName: string;
   email: string;
   role: 'freelancer' | 'client';
   skills: string[];
+  title?: string;
+  bio?: string;
+  cvFileName?: string;
+  cvFileData?: string;
 }
 
 @Component({
@@ -14,15 +21,26 @@ interface ProfileData {
   templateUrl: './profile.component.html',
   styleUrls: ['./profile.component.scss'],
   standalone: true,
-  imports: [CommonModule, IonicModule]
+  imports: [CommonModule, IonicModule, RouterModule]
 })
 export class ProfileComponent implements OnInit {
+  showCvPreview = false;
+  safeCvUrl: SafeResourceUrl | null = null;
   profile: ProfileData = {
     fullName: 'Alex Sterling',
     email: 'alex.sterling@design.co',
     role: 'freelancer',
-    skills: ['UI/UX Design', 'Branding', 'Figma', 'Interaction', 'Motion']
+    skills: ['UI/UX Design', 'Branding', 'Figma', 'Interaction', 'Motion'],
+    title: 'Senior Brand Designer',
+    bio: 'Passionate designer with 8+ years of experience in creating cohesive brand identities and intuitive digital experiences.',
+    cvFileName: '',
+    cvFileData: ''
   };
+
+  constructor(
+    private readonly location: Location,
+    private readonly sanitizer: DomSanitizer
+  ) {}
 
   ngOnInit(): void {
     this.loadProfile();
@@ -44,10 +62,31 @@ export class ProfileComponent implements OnInit {
         role: parsed.role === 'client' ? 'client' : 'freelancer',
         skills: Array.isArray(parsed.skills) && parsed.skills.length > 0
           ? parsed.skills
-          : this.profile.skills
+          : this.profile.skills,
+        title: parsed.title || this.profile.title,
+        bio: parsed.bio || this.profile.bio,
+        cvFileName: parsed.cvFileName || '',
+        cvFileData: parsed.cvFileData || ''
       };
     } catch {
-      // Ignore invalid local storage payload and keep defaults.
     }
+  }
+
+  openCvPreview(): void {
+    if (!this.profile.cvFileData) {
+      return;
+    }
+
+    this.safeCvUrl = this.sanitizer.bypassSecurityTrustResourceUrl(this.profile.cvFileData);
+    this.showCvPreview = true;
+  }
+
+  closeCvPreview(): void {
+    this.showCvPreview = false;
+    this.safeCvUrl = null;
+  }
+
+  goBack(): void {
+    this.location.back();
   }
 }

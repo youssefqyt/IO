@@ -36,6 +36,9 @@ export interface MyjobActiveProjectCard {
   deliveryMessage?: string;
   deliveryFiles?: MyjobDeliveryFile[];
   deliverySubmittedAtLabel?: string;
+  latestRequestedAmount?: number;
+  latestPaymentType?: 'paid' | 'unpaid';
+  latestDeliveryIsNew?: boolean;
 }
 
 @Component({

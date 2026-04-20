@@ -263,6 +263,7 @@ def release_myjob_payment(db, proposal_id):
         "totalPaidAmount": total_paid_amount,
         "remainingBudgetAmount": remaining_contract_amount,
         "latestDeliveryStatus": "paid",
+        "latestDeliveryIsNew": False,  # Mark delivery as no longer new after payment
         "hasUnreadClientUpdate": False,
         "hasUnreadFreelancerUpdate": True,
         "lastCommunicationType": "payment",

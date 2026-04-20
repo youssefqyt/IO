@@ -11,8 +11,8 @@ from Messages import get_conversations
 from AddProject import add_project
 from BrowseProject import get_projects, get_project_details
 from SubmitProposal import submit_proposal, get_send_proposals, update_send_proposal_status
-from Myjob import get_active_myjobs, update_myjob_workflow_status, deliver_myjob_assets
-from Pay import pay_product
+from Myjob import get_active_myjobs, update_myjob_workflow_status, deliver_myjob_assets, mark_delivery_viewed
+from Pay import pay_product, release_myjob_payment
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = SECRET_KEY
@@ -20,6 +20,8 @@ CORS(app)
 
 client = MongoClient(MONGO_URI)
 db = client.get_database("FreeLancerDB")
+
+
 @app.route('/api/test-db', methods=['GET'])
 def test_db():
     try:
@@ -99,6 +101,18 @@ def change_myjob_workflow_status(proposal_id):
 @app.route('/api/myjobs/<proposal_id>/deliver-assets', methods=['POST'])
 def submit_myjob_delivery(proposal_id):
     return deliver_myjob_assets(db, proposal_id)
+
+
+@app.route('/api/myjobs/<proposal_id>/mark-delivery-viewed', methods=['POST'])
+def mark_delivery_viewed_route(proposal_id):
+    from Myjob import mark_delivery_viewed
+    return mark_delivery_viewed(db, proposal_id)
+
+
+@app.route('/api/myjobs/<proposal_id>/release-payment', methods=['POST'])
+def release_myjob_payment_route(proposal_id):
+    from Pay import release_myjob_payment
+    return release_myjob_payment(db, proposal_id)
 
 
 @app.route('/api/pay', methods=['POST'])

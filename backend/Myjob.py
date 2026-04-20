@@ -211,6 +211,7 @@ def _record_communication(
     requested_amount=0.0,
     approved_amount=0.0,
     delivery_sequence=0,
+    payment_type="unpaid",
 ):
     sender_profile = _actor_profile(job, sender_role)
     event_time = _now_utc()
@@ -230,6 +231,7 @@ def _record_communication(
             "requestedAmount": _safe_float(requested_amount, 0),
             "approvedAmount": _safe_float(approved_amount, 0),
             "deliverySequence": _safe_int(delivery_sequence, 0),
+            "paymentType": payment_type,
             "createdAt": event_time,
         }
     )
@@ -352,6 +354,8 @@ def _normalize_myjob_response(document, role):
         "deliveryFiles": _serialize_delivery_files(document.get("deliveryFiles")),
         "deliverySubmittedAtLabel": _format_relative_time(document.get("deliverySubmittedAt")),
         "latestRequestedAmount": _safe_float(document.get("latestRequestedAmount"), 0),
+        "latestPaymentType": str(document.get("latestPaymentType") or "unpaid").strip().lower(),
+        "latestDeliveryIsNew": bool(document.get("latestDeliveryIsNew", False)),
         "latestDeliveryStatus": _normalize_delivery_status(document.get("latestDeliveryStatus")),
         "latestRevisionRequestMessage": str(document.get("latestRevisionRequestMessage", "")).strip(),
         "latestRevisionRequestedAtLabel": _format_relative_time(document.get("latestRevisionRequestedAt")),
@@ -464,6 +468,7 @@ def deliver_myjob_assets(db, proposal_id):
     delivery_message = str(data.get("deliveryMessage", "")).strip()
     delivery_files = _serialize_delivery_files(data.get("deliveryFiles"))
     requested_amount = _safe_float(data.get("requestedAmount"), 0)
+    payment_type = (data.get("paymentType") or "").strip().lower()
 
     if not user_id:
         return jsonify({"errors": {"userId": "User id is required"}}), 400
@@ -473,6 +478,12 @@ def deliver_myjob_assets(db, proposal_id):
 
     if not delivery_files:
         return jsonify({"errors": {"deliveryFiles": "Please attach at least one delivery file"}}), 400
+
+    if payment_type not in {"paid", "unpaid"}:
+        return jsonify({"errors": {"paymentType": "Payment type must be 'paid' or 'unpaid'"}}), 400
+
+    if payment_type == "paid" and requested_amount <= 0:
+        return jsonify({"errors": {"requestedAmount": "Paid deliveries must include a requested release amount"}}), 400
 
     total_delivery_bytes = sum(_estimate_data_url_size(file.get("fileData")) for file in delivery_files)
     if total_delivery_bytes > MAX_DELIVERY_BYTES:
@@ -493,16 +504,7 @@ def deliver_myjob_assets(db, proposal_id):
 
     project_type = _normalize_project_type(existing_job.get("projectType"))
     remaining_budget_amount = _remaining_contract_amount(existing_job)
-    if project_type == "fixed-price":
-        if requested_amount <= 0:
-            return jsonify(
-                {
-                    "errors": {
-                        "requestedAmount": "Fixed-price deliveries must include a requested release amount."
-                    }
-                }
-            ), 400
-
+    if project_type == "fixed-price" and payment_type == "paid":
         if remaining_budget_amount > 0 and requested_amount > remaining_budget_amount:
             return jsonify(
                 {
@@ -521,10 +523,12 @@ def deliver_myjob_assets(db, proposal_id):
         "deliveryMessage": delivery_message,
         "deliveryFiles": delivery_files,
         "deliverySubmittedAt": now,
-        "latestRequestedAmount": requested_amount,
+        "latestRequestedAmount": requested_amount if payment_type == "paid" else 0,
         "latestDeliveryStatus": "submitted",
         "latestRevisionRequestMessage": "",
         "latestRevisionRequestedAt": None,
+        "latestPaymentType": payment_type,
+        "latestDeliveryIsNew": True,  # Mark as new delivery for bold display
         "hasUnreadClientUpdate": True,
         "hasUnreadFreelancerUpdate": False,
         "lastCommunicationType": "delivery",
@@ -541,8 +545,9 @@ def deliver_myjob_assets(db, proposal_id):
         "freelancer",
         message=delivery_message,
         files=delivery_files,
-        requested_amount=requested_amount,
+        requested_amount=requested_amount if payment_type == "paid" else 0,
         delivery_sequence=delivery_sequence,
+        payment_type=payment_type,
     )
 
     return jsonify(
@@ -554,7 +559,8 @@ def deliver_myjob_assets(db, proposal_id):
             "deliverySubmittedAtLabel": _format_relative_time(now),
             "deliverySequence": delivery_sequence,
             "progressIncrementCount": delivery_sequence,
-            "latestRequestedAmount": requested_amount,
+            "latestRequestedAmount": requested_amount if payment_type == "paid" else 0,
+            "latestPaymentType": payment_type,
             "latestDeliveryStatus": "submitted",
             "hasUnreadClientUpdate": True,
         }
@@ -644,3 +650,29 @@ def mark_myjob_updates_seen(db, proposal_id):
     _sync_job_update(db, proposal_id, {unread_field: False, "updatedAt": _now_utc()})
 
     return jsonify({"message": "Updates marked as seen."}), 200
+
+
+def mark_delivery_viewed(db, proposal_id):
+    data = request.get_json() or {}
+    user_id = (data.get("userId") or "").strip()
+    role = (data.get("role") or "").strip().lower()
+
+    if not user_id:
+        return jsonify({"errors": {"userId": "User id is required"}}), 400
+
+    if role != "client":
+        return jsonify({"errors": {"role": "Only clients can mark deliveries as viewed"}}), 403
+
+    existing_job = _load_authorized_job(db, proposal_id, user_id, role)
+    if not existing_job:
+        return jsonify({"errors": {"proposalId": "Active task not found"}}), 404
+
+    now = _now_utc()
+    update_payload = {
+        "latestDeliveryIsNew": False,
+        "updatedAt": now,
+    }
+
+    _sync_job_update(db, proposal_id, update_payload)
+
+    return jsonify({"message": "Delivery marked as viewed"}), 200

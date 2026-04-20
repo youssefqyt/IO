@@ -1,9 +1,25 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
 
 interface HomeProfile {
   fullName: string;
   role: 'freelancer' | 'client';
   title?: string;
+  id?: string;
+}
+
+interface EarningsSummary {
+  totalEarnings: number;
+  paymentCount: number;
+  projectCount: number;
+  currency: string;
+  recentPayments: Array<{
+    projectId: string;
+    projectTitle: string;
+    amount: number;
+    paidAtLabel: string;
+  }>;
 }
 
 @Component({
@@ -12,12 +28,16 @@ interface HomeProfile {
   styleUrls: ['home.page.scss'],
   standalone: false,
 })
-export class HomePage {
+export class HomePage implements OnInit {
   profile: HomeProfile = {
     fullName: 'Alex Sterling',
     role: 'freelancer',
     title: 'Senior Brand Designer'
   };
+
+  earnings: EarningsSummary | null = null;
+  isLoadingEarnings = false;
+  earningsError = '';
 
   readonly recentProjects = [
     {
@@ -57,12 +77,17 @@ export class HomePage {
     }
   ];
 
-  constructor() {
+  constructor(private readonly http: HttpClient) {
     this.loadProfile();
+  }
+
+  ngOnInit(): void {
+    this.loadEarnings();
   }
 
   ionViewWillEnter(): void {
     this.loadProfile();
+    this.loadEarnings();
   }
 
   get firstName(): string {
@@ -78,6 +103,20 @@ export class HomePage {
     return this.profile.role === 'client';
   }
 
+  get totalEarnings(): string {
+    if (!this.earnings) return '$0.00';
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: this.earnings.currency || 'USD'
+    }).format(this.earnings.totalEarnings);
+  }
+
+  get earningsProgressPercent(): number {
+    if (!this.earnings) return 0;
+    const monthlyGoal = 7000; // This could be configurable
+    return Math.min((this.earnings.totalEarnings / monthlyGoal) * 100, 100);
+  }
+
   private loadProfile(): void {
     const raw = localStorage.getItem('fw_profile');
     if (!raw) {
@@ -89,9 +128,36 @@ export class HomePage {
       this.profile = {
         fullName: parsed.fullName || this.profile.fullName,
         role: parsed.role === 'client' ? 'client' : 'freelancer',
-        title: parsed.title || this.profile.title
+        title: parsed.title || this.profile.title,
+        id: parsed.id
       };
     } catch {
     }
+  }
+
+  private loadEarnings(): void {
+    if (!this.profile.id || this.profile.role !== 'freelancer') {
+      this.earnings = null;
+      return;
+    }
+
+    this.isLoadingEarnings = true;
+    this.earningsError = '';
+
+    this.http.get<EarningsSummary>(`${environment.apiUrl}/myjobs/earnings-summary`, {
+      params: { userId: this.profile.id, role: this.profile.role }
+    }).subscribe({
+      next: (summary) => {
+        this.isLoadingEarnings = false;
+        this.earnings = summary;
+      },
+      error: (error) => {
+        this.isLoadingEarnings = false;
+        this.earnings = null;
+        this.earningsError = error?.error?.errors
+          ? Object.values(error.error.errors).join(' ')
+          : 'Unable to load earnings right now.';
+      }
+    });
   }
 }

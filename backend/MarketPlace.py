@@ -164,12 +164,14 @@ def add_marketplace_product(db):
         },
         "createdAt": now,
         "updatedAt": now,
+        "status": "pending"
     }
 
-    result = db["MarketPlace"].insert_one(document)
+    result = db["AdminProduct"].insert_one(document)
 
     return jsonify({
-        "message": "Product added successfully",
+        "message": "Product submitted. Pending admin approval.",
+        "requestId": str(result.inserted_id),
         "product": {
             "id": str(result.inserted_id),
             "title": document["name"],

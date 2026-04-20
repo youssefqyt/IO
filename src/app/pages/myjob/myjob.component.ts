@@ -198,6 +198,15 @@ export class MyjobComponent implements OnInit {
   isCompletingProject = false;
   completeProjectMessage = '';
 
+  showPaymentModal = false;
+  paymentSprint: SprintRecord | null = null;
+  cardNumber = '';
+  expiryDate = '';
+  cvv = '';
+  isProcessingPayment = false;
+  paymentError = '';
+  paymentSuccessMessage = '';
+
   constructor(
     private readonly location: Location,
     private readonly http: HttpClient,
@@ -335,39 +344,13 @@ export class MyjobComponent implements OnInit {
       return;
     }
 
-    this.selectedProjectError = '';
-    this.isUpdatingProjectStatus = true;
-
-    this.http.post<{ message: string; paymentStatus: string; workflowStatus: string; totalPaidAmount: number; remainingBudgetAmount: number }>(
-      `${this.apiUrl}/sprints/${sprint.sprintId}/pay`,
-      {
-        userId: this.profile.id,
-        role: this.profile.role,
-        amount: sprint.price,
-        cardNumber: '4242424242424242',
-        expiryDate: '12/30',
-        cvv: '123'
-      }
-    ).subscribe({
-      next: (response) => {
-        this.isUpdatingProjectStatus = false;
-        this.statusUpdateMessage = response.message || 'Sprint payment completed successfully.';
-        if (this.selectedProject?.sprints) {
-          this.selectedProject.sprints = this.selectedProject.sprints.map((item) => (
-            item.sprintId === sprint.sprintId ? { ...item, status: 'paid', paidAtLabel: 'Just now', canAccessFiles: true, submittedAt: item.submittedAt || 'now' } : item
-          ));
-          this.selectedProject.hasUnpaidSubmittedSprints = this.hasUnpaidSubmittedSprints(this.selectedProject.sprints);
-        }
-        this.loadActiveProjects();
-        if (this.selectedProject) {
-          this.loadProjectSprints(this.selectedProject);
-        }
-      },
-      error: (error) => {
-        this.isUpdatingProjectStatus = false;
-        this.selectedProjectError = this.getErrorMessage(error, 'Unable to process sprint payment right now.');
-      }
-    });
+    this.paymentSprint = sprint;
+    this.cardNumber = '';
+    this.expiryDate = '';
+    this.cvv = '';
+    this.paymentError = '';
+    this.paymentSuccessMessage = '';
+    this.showPaymentModal = true;
   }
 
   closeProjectDetails(): void {
@@ -393,6 +376,90 @@ export class MyjobComponent implements OnInit {
     this.deliveryPrice = 0;
     this.deliveryFiles = [];
     this.submissionProject = null;
+  }
+
+  closePaymentModal(): void {
+    this.showPaymentModal = false;
+    this.paymentSprint = null;
+    this.cardNumber = '';
+    this.expiryDate = '';
+    this.cvv = '';
+    this.paymentError = '';
+    this.paymentSuccessMessage = '';
+    this.isProcessingPayment = false;
+  }
+
+  submitPayment(): void {
+    if (!this.paymentSprint || !this.selectedProject || !this.profile?.id) {
+      this.paymentError = 'Payment information is missing';
+      return;
+    }
+
+    if (!this.cardNumber || !this.expiryDate || !this.cvv) {
+      this.paymentError = 'Please fill in all card details';
+      return;
+    }
+
+    this.isProcessingPayment = true;
+    this.paymentError = '';
+
+    this.http.post<{ 
+      message: string; 
+      paymentStatus: string; 
+      workflowStatus: string; 
+      totalPaidAmount: number; 
+      remainingBudgetAmount: number 
+    }>(
+      `${this.apiUrl}/sprints/${this.paymentSprint.sprintId}/pay`,
+      {
+        userId: this.profile.id,
+        role: this.profile.role,
+        amount: this.paymentSprint.price,
+        cardNumber: this.cardNumber,
+        expiryDate: this.expiryDate,
+        cvv: this.cvv
+      }
+    ).subscribe({
+      next: (response) => {
+        this.isProcessingPayment = false;
+        this.paymentSuccessMessage = response.message || 'Sprint payment completed successfully.';
+        
+        // Update sprint status to paid
+        if (this.selectedProject?.sprints) {
+          this.selectedProject.sprints = this.selectedProject.sprints.map((item) => (
+            item.sprintId === this.paymentSprint?.sprintId 
+              ? { 
+                  ...item, 
+                  status: 'paid', 
+                  paidAtLabel: 'Just now', 
+                  canAccessFiles: true, 
+                  submittedAt: item.submittedAt || 'now' 
+                } 
+              : item
+          ));
+          this.selectedProject.hasUnpaidSubmittedSprints = this.hasUnpaidSubmittedSprints(this.selectedProject.sprints);
+        }
+
+        // Reload data
+        this.loadActiveProjects();
+        if (this.selectedProject) {
+          this.loadProjectSprints(this.selectedProject);
+        }
+
+        // Close modal after success
+        setTimeout(() => {
+          this.closePaymentModal();
+        }, 1500);
+      },
+      error: (error) => {
+        this.isProcessingPayment = false;
+        this.paymentError = error?.error?.errors 
+          ? Object.values(error.error.errors).join(' ')
+          : error?.error?.message 
+          ? error.error.message
+          : 'Unable to process payment. Please check your card details and try again.';
+      }
+    });
   }
 
   onDeliveryFilesSelected(event: Event): void {

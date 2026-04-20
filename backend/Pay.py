@@ -198,6 +198,7 @@ def release_myjob_payment(db, proposal_id):
     data = request.get_json() or {}
     user_id = (data.get("userId") or "").strip()
     role = (data.get("role") or "").strip().lower()
+    sprint_id = (data.get("sprintId") or "").strip()
 
     if not user_id:
         return jsonify({"errors": {"userId": "User id is required"}}), 400
@@ -209,22 +210,32 @@ def release_myjob_payment(db, proposal_id):
     if not existing_job:
         return jsonify({"errors": {"proposalId": "Active task not found"}}), 404
 
-    latest_delivery_status = _normalize_delivery_status(existing_job.get("latestDeliveryStatus"))
-    if latest_delivery_status != "submitted":
-        return jsonify(
-            {
-                "errors": {
-                    "latestDeliveryStatus": "A submitted delivery is required before payment can be released."
-                }
-            }
-        ), 400
+    # Get sprints
+    sprints = existing_job.get("sprints", [])
+    if not sprints:
+        return jsonify({"errors": {"sprints": "No sprints found for this project"}}), 400
 
-    requested_amount = _safe_float(data.get("amount"), existing_job.get("latestRequestedAmount") or _remaining_contract_amount(existing_job))
-    remaining_budget_amount = _remaining_contract_amount(existing_job)
+    target_sprint = None
+    if sprint_id:
+        target_sprint = next((s for s in sprints if s["sprintId"] == sprint_id), None)
+    else:
+        # Find the first unpaid submitted sprint
+        target_sprint = next((s for s in sprints if s.get("status") == "unpaid" and s.get("submittedAt")), None)
 
+    if not target_sprint:
+        return jsonify({"errors": {"sprintId": "No payable sprint found"}}), 400
+
+    if target_sprint.get("status") != "unpaid":
+        return jsonify({"errors": {"sprintId": "Sprint is not in unpaid status"}}), 400
+
+    if not target_sprint.get("submittedAt"):
+        return jsonify({"errors": {"sprintId": "Sprint has no submitted delivery"}}), 400
+
+    requested_amount = _safe_float(data.get("amount"), target_sprint.get("price", 0))
     if requested_amount <= 0:
         return jsonify({"errors": {"amount": "Payment amount must be greater than 0"}}), 400
 
+    remaining_budget_amount = _remaining_contract_amount(existing_job)
     if remaining_budget_amount > 0 and requested_amount > remaining_budget_amount:
         return jsonify(
             {
@@ -256,14 +267,17 @@ def release_myjob_payment(db, proposal_id):
     remaining_contract_amount = max(round(contract_amount - total_paid_amount, 2), 0)
     workflow_status = "completed" if remaining_contract_amount <= 0 else "in-progress"
 
+    # Update sprint status
+    target_sprint["status"] = "paid"
+    target_sprint["paidAt"] = charged_at
+    target_sprint["updatedAt"] = charged_at
+
     update_payload = {
-        "latestApprovedAmount": amount,
+        "sprints": sprints,
         "lastPaidAmount": amount,
         "lastPaidAt": charged_at,
         "totalPaidAmount": total_paid_amount,
         "remainingBudgetAmount": remaining_contract_amount,
-        "latestDeliveryStatus": "paid",
-        "latestDeliveryIsNew": False,  # Mark delivery as no longer new after payment
         "hasUnreadClientUpdate": False,
         "hasUnreadFreelancerUpdate": True,
         "lastCommunicationType": "payment",
@@ -281,7 +295,8 @@ def release_myjob_payment(db, proposal_id):
             "clientId": existing_job.get("clientId", ""),
             "freelancerId": existing_job.get("freelancerId", ""),
             "projectTitle": existing_job.get("projectTitle", ""),
-            "deliverySequence": existing_job.get("deliverySequence", 0),
+            "sprintId": target_sprint["sprintId"],
+            "sprintNumber": target_sprint["sprintNumber"],
             "cardId": str(card["_id"]),
             "cardLast4": charge_result["last4"],
             "amount": amount,

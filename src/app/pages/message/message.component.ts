@@ -8,11 +8,22 @@ import { environment } from '../../../environments/environment';
 
 interface Conversation {
   id?: string;
+  projectId?: string;
   name: string;
   time: string;
-  preview: string;
+  lastMessage: string;
+  senderId?: string;
+  otherUserId?: string;
+  conversationId: string;
   isOnline?: boolean;
   isUnread?: boolean;
+}
+
+interface Profile {
+  id: string;
+  fullName: string;
+  email: string;
+  role: 'freelancer' | 'client';
 }
 
 @Component({
@@ -32,6 +43,19 @@ export class MessageComponent implements OnInit {
     this.loadConversations();
   }
 
+  private getProfile(): Profile | null {
+    const raw = localStorage.getItem('fw_profile');
+    if (!raw) {
+      return null;
+    }
+
+    try {
+      return JSON.parse(raw) as Profile;
+    } catch {
+      return null;
+    }
+  }
+
   get filteredConversations(): Conversation[] {
     const query = this.searchTerm.trim().toLowerCase();
 
@@ -45,14 +69,25 @@ export class MessageComponent implements OnInit {
   }
 
   private loadConversations(): void {
-    this.http.get<Conversation[]>(`${environment.apiUrl}/conversations`).subscribe({
-      next: (conversations) => {
-        this.conversations = Array.isArray(conversations) ? conversations : [];
-      },
-      error: (error) => {
-        console.error('Failed to load conversations', error);
-        this.conversations = [];
-      }
-    });
+    const profile = this.getProfile();
+    if (!profile?.id || !profile?.role) {
+      console.warn('Unable to load conversations: missing user profile');
+      this.conversations = [];
+      return;
+    }
+
+    this.http
+      .get<Conversation[]>(
+        `${environment.apiUrl}/conversations?userId=${encodeURIComponent(profile.id)}&role=${encodeURIComponent(profile.role)}`
+      )
+      .subscribe({
+        next: (conversations) => {
+          this.conversations = Array.isArray(conversations) ? conversations : [];
+        },
+        error: (error) => {
+          console.error('Failed to load conversations', error);
+          this.conversations = [];
+        }
+      });
   }
 }

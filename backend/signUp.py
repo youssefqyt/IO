@@ -1,6 +1,5 @@
 from flask import request, jsonify
 from werkzeug.security import generate_password_hash
-from datetime import datetime, timezone
 import re
 
 def serach(Collection, email):
@@ -40,35 +39,27 @@ def register_user(db):
     if role not in ["freelancer", "client"]:
         errors["role"] = "Invalid role selected"
 
+    Collection = db["Freelancer"] if role == "freelancer" else db["Client"]
+
     email_exists = serach(db["Freelancer"], email) or serach(db["Client"], email)
     if email and email_exists:
-        errors["email"] = "User already exists"
-
-    email_exists_in_admin = serach(db["AdminCompte"], email)
-    if email and email_exists_in_admin:
         errors["email"] = "User already exists"
 
     if errors:
         return jsonify({"errors": errors}), 400
 
     hashed_password = generate_password_hash(password)
-    now = datetime.now(timezone.utc)
 
-    admin_request = {
+    result = Collection.insert_one({
         "username": name,
         "email": email,
-        "password": hashed_password,
-        "role": role,
-        "createdAt": now,
-        "status": "pending"
-    }
-
-    result = db["AdminCompte"].insert_one(admin_request)
+        "password": hashed_password
+    })
 
     return jsonify({
-        "message": "Signup request submitted. Pending admin approval.",
-        "requestId": str(result.inserted_id),
+        "message": "Account Created successfully",
         "user": {
+            "id": str(result.inserted_id),
             "fullName": name,
             "email": email,
             "role": role

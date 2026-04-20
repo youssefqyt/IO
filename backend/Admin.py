@@ -135,3 +135,33 @@ def reject_product_request(db, request_id):
         return jsonify({"message": "Product request rejected"}), 200
     except Exception as e:
         return jsonify({"message": "Failed to reject product request", "error": str(e)}), 500
+
+
+def get_dashboard_stats(db):
+    try:
+        freelancer_count = db["Freelancer"].count_documents({})
+        client_count = db["Client"].count_documents({})
+        
+        return jsonify({
+            "freelancerCount": freelancer_count,
+            "clientCount": client_count
+        }), 200
+    except Exception as e:
+        return jsonify({"message": "Failed to fetch dashboard stats", "error": str(e)}), 500
+
+
+def get_compte_requests(db):
+    try:
+        requests = db["AdminCompte"].find({"status": "pending"})
+        result = []
+        for req in requests:
+            result.append({
+                "id": str(req.get("_id")),
+                "username": req.get("username", ""),
+                "email": req.get("email", ""),
+                "role": req.get("role", ""),
+                "createdAt": req.get("createdAt", "").isoformat() if req.get("createdAt") else ""
+            })
+        return jsonify(result), 200
+    except Exception as e:
+        return jsonify({"message": "Failed to fetch compte requests", "error": str(e)}), 500

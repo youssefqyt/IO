@@ -7,12 +7,13 @@ from signUp import register_user
 from login import login_user
 from changepassword import change_password
 from MarketPlace import get_marketplace_products, add_marketplace_product
-from Messages import get_conversations
+from Messages import get_conversations, get_messages, send_message, mark_messages_read
 from AddProject import add_project
 from BrowseProject import get_projects, get_project_details
 from SubmitProposal import submit_proposal, get_send_proposals, update_send_proposal_status
 from Myjob import get_active_myjobs, update_myjob_workflow_status, deliver_myjob_assets, mark_delivery_viewed
 from Pay import pay_product, release_myjob_payment
+from Sprint import create_sprint, get_sprints_for_proposal, get_sprints_by_filters, pay_sprint
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = SECRET_KEY
@@ -56,6 +57,16 @@ def create_marketplace_product():
 @app.route('/api/conversations', methods=['GET'])
 def conversations():
     return get_conversations(db)
+
+
+@app.route('/api/messages', methods=['GET'])
+def messages_route():
+    return get_messages(db)
+
+
+@app.route('/api/messages/read', methods=['POST'])
+def mark_messages_read_route():
+    return mark_messages_read(db)
 
 
 @app.route('/api/projects', methods=['GET'])
@@ -115,9 +126,48 @@ def release_myjob_payment_route(proposal_id):
     return release_myjob_payment(db, proposal_id)
 
 
-@app.route('/api/pay', methods=['POST'])
-def pay():
-    return pay_product(db)
+@app.route('/api/myjobs/<proposal_id>/sprints', methods=['POST'])
+def create_sprint_route(proposal_id):
+    return create_sprint(db, proposal_id)
+
+
+@app.route('/api/myjobs/<proposal_id>/sprints', methods=['GET'])
+def get_sprints_route(proposal_id):
+    return get_sprints_for_proposal(db, proposal_id)
+
+
+@app.route('/api/sprints', methods=['GET'])
+def search_sprints_route():
+    return get_sprints_by_filters(db)
+
+@app.route('/api/sprints/<sprint_id>/pay', methods=['POST'])
+def pay_sprint_route(sprint_id):
+    return pay_sprint(db, sprint_id)
+
+
+@app.route('/api/myjobs/<proposal_id>/complete', methods=['POST'])
+def complete_project_route(proposal_id):
+    from Sprint import complete_project
+    return complete_project(db, proposal_id)
+
+
+@app.route('/api/project-history', methods=['GET'])
+def get_project_history_route():
+    from ProjectHistory import get_project_history
+    return get_project_history(db)
+
+
+@app.route('/api/admin/dashboard-stats', methods=['GET'])
+def dashboard_stats_route():
+    from Admin import get_dashboard_stats
+    return get_dashboard_stats(db)
+
+
+@app.route('/api/admin/compte-requests', methods=['GET'])
+def compte_requests_route():
+    from Admin import get_compte_requests
+    return get_compte_requests(db)
+
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0',port=5000)
+    app.run(debug=True, host='0.0.0.0', port=5000)

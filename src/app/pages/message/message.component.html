@@ -29,7 +29,13 @@
       <div *ngIf="filteredConversations.length; else emptyState" class="divide-y divide-slate-50 dark:divide-slate-900">
         <div
           *ngFor="let conversation of filteredConversations"
-          routerLink="/message/chat"
+          [routerLink]="['/message/chat']"
+          [queryParams]="{
+            conversationId: conversation.conversationId,
+            projectId: conversation.projectId,
+            otherUserId: conversation.otherUserId,
+            otherUserName: conversation.name
+          }"
           class="flex items-center gap-4 py-4 px-2 cursor-pointer transition-all active:bg-slate-50 dark:active:bg-slate-900/50 rounded-2xl group"
         >
           <div class="relative flex-shrink-0">
@@ -60,7 +66,7 @@
               [class.dark:text-slate-400]="!conversation.isUnread"
               [class.font-medium]="!conversation.isUnread"
             >
-              {{ conversation.preview }}
+              {{ conversation.lastMessage }}
             </p>
           </div>
         </div>

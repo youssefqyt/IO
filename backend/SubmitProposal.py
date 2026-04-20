@@ -160,6 +160,32 @@ def submit_proposal(db):
     }
 
     result = db["SendProposal"].insert_one(proposal_document)
+    
+    # Create an initial Sprint document for this proposal
+    sprint_doc = {
+        "proposalId": str(result.inserted_id),
+        "projectId": proposal_document["projectId"],
+        "clientId": proposal_document["clientId"],
+        "freelancerId": proposal_document["freelancerId"],
+        "sprintNumber": 1,
+        "price": proposal_document["bid"],
+        "paymentStatus": "unpaid",
+        "deliveryMessage": proposal_document["pitch"],
+        "deliveryFiles": [
+            {
+                "fileName": proposal_document["attachmentFileName"],
+                "fileData": proposal_document["attachmentFileData"],
+                "mimeType": "", 
+                "sizeBytes": 0
+            }
+        ] if proposal_document["attachmentFileName"] else [],
+        "deliveredAt": now,
+        "paidAt": None,
+        "revisionRequestMessage": "",
+        "revisionRequestedAt": None,
+        "createdAt": now,
+    }
+    db["Sprint"].insert_one(sprint_doc)
 
     return jsonify({
         "message": "Proposal submitted successfully",
@@ -210,6 +236,7 @@ def get_send_proposals(db):
         return jsonify({"errors": {"role": "Role must be client or freelancer"}}), 400
 
     query = {"clientId": user_id} if role == "client" else {"freelancerId": user_id}
+    query["etat"] = {"$ne": "accepted"}
     documents = db["SendProposal"].find(query).sort("createdAt", -1)
 
     proposals = []
@@ -286,5 +313,17 @@ def update_send_proposal_status(db, proposal_id):
     proposal["updatedAt"] = now
     create_myjob_freelancer_record(db, proposal, now)
     create_myjob_client_record(db, proposal, now)
+
+    db["Message"].insert_one({
+        "proposalId": proposal.get("proposalId", ""),
+        "projectId": proposal.get("projectId", ""),
+        "clientId": proposal.get("clientId", ""),
+        "freelancerId": proposal.get("freelancerId", ""),
+        "senderId": user_id,
+        "senderRole": "client",
+        "message": "Proposal accepted - Project started",
+        "eventType": "project-started",
+        "createdAt": now
+    })
 
     return jsonify({"message": "Proposal accepted successfully"}), 200

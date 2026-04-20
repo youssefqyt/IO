@@ -50,6 +50,21 @@ interface SendProposalRecord {
   freelancer?: ProposalParty;
 }
 
+interface SprintRecord {
+  sprintId: string;
+  sprintNumber: number;
+  title: string;
+  description: string;
+  status: 'unpaid' | 'paid';
+  price: number;
+  deliveryMessage: string;
+  deliveryFiles: MyjobDeliveryFile[];
+  submittedAtLabel: string;
+  paidAtLabel: string;
+  submittedAt?: string;
+  canAccessFiles: boolean;
+}
+
 interface ActiveMyjobRecord {
   id: string;
   proposalId: string;
@@ -64,15 +79,21 @@ interface ActiveMyjobRecord {
   duration: string;
   attachmentFileName?: string;
   attachmentFileData?: string;
+  deliveryMessage?: string;
+  deliveryFiles?: MyjobDeliveryFile[];
+  deliverySubmittedAtLabel?: string;
   status: string;
   workflowStatus?: string;
   etat: string;
   acceptedAtLabel: string;
   client?: ProposalParty;
   freelancer?: ProposalParty;
-  deliveryMessage?: string;
-  deliveryFiles?: MyjobDeliveryFile[];
-  deliverySubmittedAtLabel?: string;
+  sprints: SprintRecord[];
+  totalPaidAmount: number;
+  remainingBudgetAmount: number;
+  hasUnreadUpdate: boolean;
+  lastCommunicationType: string;
+  lastCommunicationAtLabel: string;
 }
 
 interface ProjectDetailsResponse {
@@ -124,6 +145,7 @@ interface DeliveryAssetsResponse {
   imports: [CommonModule, FormsModule, IonicModule, RouterModule, MyjobActiveProjectCardComponent]
 })
 export class MyjobComponent implements OnInit {
+  readonly apiUrl = environment.apiUrl;
   readonly maxDeliveryBytes = 8 * 1024 * 1024;
   readonly workflowOptions: WorkflowOption[] = [
     { value: 'in-progress', label: 'In Progress' },
@@ -146,11 +168,13 @@ export class MyjobComponent implements OnInit {
   deliveryError = '';
   deliverySuccessMessage = '';
   deliveryMessage = '';
+  deliveryPrice = 0;
   deliveryFiles: MyjobDeliveryFile[] = [];
   isReadingDeliveryFiles = false;
   isSubmittingDelivery = false;
   showFilePreview = false;
   safePreviewUrl: SafeResourceUrl | null = null;
+  previewFileData: string | null = null;
   isPreviewPdf = false;
   isPreviewImage = false;
   previewTitle = '';
@@ -165,6 +189,14 @@ export class MyjobComponent implements OnInit {
   selectedProjectType = '';
   selectedProjectBriefFileName = '';
   selectedProjectBriefFileData = '';
+
+  projectHistory: any[] = [];
+  isLoadingHistory = false;
+  historyError = '';
+
+  showCompleteProjectDialog = false;
+  isCompletingProject = false;
+  completeProjectMessage = '';
 
   constructor(
     private readonly location: Location,
@@ -190,6 +222,78 @@ export class MyjobComponent implements OnInit {
 
   setActiveTab(tab: 'active' | 'history' | 'drafts'): void {
     this.activeTab = tab;
+    if (tab === 'history') {
+      this.loadProjectHistory();
+    }
+  }
+
+  loadProjectHistory(): void {
+    this.historyError = '';
+    if (!this.profile?.id || !this.profile?.role) {
+      this.projectHistory = [];
+      this.historyError = 'Please log in again to view your project history.';
+      return;
+    }
+
+    this.isLoadingHistory = true;
+    this.http.get<any[]>(`${this.apiUrl}/project-history`, {
+      params: {
+        userId: this.profile.id,
+        role: this.profile.role
+      }
+    }).subscribe({
+      next: (records) => {
+        this.isLoadingHistory = false;
+        this.projectHistory = records;
+      },
+      error: (error) => {
+        this.isLoadingHistory = false;
+        this.projectHistory = [];
+        this.historyError = this.getErrorMessage(error, 'Unable to load your project history right now.');
+      }
+    });
+  }
+
+  openCompleteProjectDialog(): void {
+    this.showCompleteProjectDialog = true;
+    this.completeProjectMessage = '';
+  }
+
+  closeCompleteProjectDialog(): void {
+    this.showCompleteProjectDialog = false;
+    this.completeProjectMessage = '';
+  }
+
+  confirmCompleteProject(): void {
+    if (!this.selectedProject?.proposalId || !this.profile?.id || !this.profile?.role) {
+      this.completeProjectMessage = 'Please log in again before completing the project.';
+      return;
+    }
+
+    this.isCompletingProject = true;
+    this.completeProjectMessage = '';
+
+    this.http.post<{ message: string; completionDate: string; totalPrice: number }>(
+      `${this.apiUrl}/myjobs/${this.selectedProject.proposalId}/complete`,
+      {
+        userId: this.profile.id,
+        role: this.profile.role
+      }
+    ).subscribe({
+      next: (response) => {
+        this.isCompletingProject = false;
+        this.completeProjectMessage = response.message || 'Project completed successfully.';
+        this.closeCompleteProjectDialog();
+        this.closeProjectDetails();
+        this.loadActiveProjects();
+        this.setActiveTab('history');
+        this.loadProjectHistory();
+      },
+      error: (error) => {
+        this.isCompletingProject = false;
+        this.completeProjectMessage = this.getErrorMessage(error, 'Unable to complete the project right now.');
+      }
+    });
   }
 
   openSubmission(project?: MyjobActiveProjectCard): void {
@@ -221,7 +325,49 @@ export class MyjobComponent implements OnInit {
 
     if (project.projectId) {
       this.loadSelectedProjectDetails(project.projectId);
+      this.loadProjectSprints(project);
     }
+  }
+
+  payForSprint(sprint: SprintRecord): void {
+    if (!this.profile?.id || this.profile.role !== 'client') {
+      this.selectedProjectError = 'Only clients can pay for sprint deliveries.';
+      return;
+    }
+
+    this.selectedProjectError = '';
+    this.isUpdatingProjectStatus = true;
+
+    this.http.post<{ message: string; paymentStatus: string; workflowStatus: string; totalPaidAmount: number; remainingBudgetAmount: number }>(
+      `${this.apiUrl}/sprints/${sprint.sprintId}/pay`,
+      {
+        userId: this.profile.id,
+        role: this.profile.role,
+        amount: sprint.price,
+        cardNumber: '4242424242424242',
+        expiryDate: '12/30',
+        cvv: '123'
+      }
+    ).subscribe({
+      next: (response) => {
+        this.isUpdatingProjectStatus = false;
+        this.statusUpdateMessage = response.message || 'Sprint payment completed successfully.';
+        if (this.selectedProject?.sprints) {
+          this.selectedProject.sprints = this.selectedProject.sprints.map((item) => (
+            item.sprintId === sprint.sprintId ? { ...item, status: 'paid', paidAtLabel: 'Just now', canAccessFiles: true, submittedAt: item.submittedAt || 'now' } : item
+          ));
+          this.selectedProject.hasUnpaidSubmittedSprints = this.hasUnpaidSubmittedSprints(this.selectedProject.sprints);
+        }
+        this.loadActiveProjects();
+        if (this.selectedProject) {
+          this.loadProjectSprints(this.selectedProject);
+        }
+      },
+      error: (error) => {
+        this.isUpdatingProjectStatus = false;
+        this.selectedProjectError = this.getErrorMessage(error, 'Unable to process sprint payment right now.');
+      }
+    });
   }
 
   closeProjectDetails(): void {
@@ -244,6 +390,7 @@ export class MyjobComponent implements OnInit {
     this.deliveryError = '';
     this.deliverySuccessMessage = '';
     this.deliveryMessage = '';
+    this.deliveryPrice = 0;
     this.deliveryFiles = [];
     this.submissionProject = null;
   }
@@ -307,11 +454,13 @@ export class MyjobComponent implements OnInit {
     this.deliveryError = '';
     this.deliverySuccessMessage = '';
 
-    this.http.post<DeliveryAssetsResponse>(`${environment.apiUrl}/myjobs/${proposalId}/deliver-assets`, {
+    this.http.post<DeliveryAssetsResponse>(`${this.apiUrl}/myjobs/${proposalId}/deliver-assets`, {
       userId: this.profile.id,
       role: this.profile.role,
       deliveryMessage: this.deliveryMessage.trim(),
-      deliveryFiles: this.deliveryFiles
+      deliveryFiles: this.deliveryFiles,
+      requestedAmount: this.deliveryPrice,
+      paymentType: this.deliveryPrice > 0 ? 'paid' : 'unpaid'
     }).subscribe({
       next: (response) => {
         const workflowStatus = this.normalizeWorkflowStatus(response.workflowStatus);
@@ -324,12 +473,14 @@ export class MyjobComponent implements OnInit {
         this.statusUpdateMessage = this.deliverySuccessMessage;
         this.applyDeliveryUpdate(proposalId, workflowStatus, updatedFiles, updatedMessage, submittedLabel);
         this.closeSubmission();
+        this.loadActiveProjects();
+        if (this.submissionProject) {
+          this.loadProjectSprints(this.submissionProject);
+        }
       },
       error: (error) => {
         this.isSubmittingDelivery = false;
-        this.deliveryError = error?.error?.errors
-          ? Object.values(error.error.errors).join(' ')
-          : 'Unable to deliver assets right now.';
+        this.deliveryError = this.getErrorMessage(error, 'Unable to deliver assets right now.');
       }
     });
   }
@@ -369,6 +520,7 @@ export class MyjobComponent implements OnInit {
     this.showFilePreview = false;
     this.safePreviewUrl = null;
     this.previewTitle = '';
+    this.previewFileData = null;
   }
 
   openDeliveryFile(file: MyjobDeliveryFile): void {
@@ -406,7 +558,7 @@ export class MyjobComponent implements OnInit {
     this.applyWorkflowStatus(proposalId, nextStatus);
 
     this.http.patch<{ message: string; workflowStatus: string }>(
-      `${environment.apiUrl}/myjobs/${proposalId}/workflow-status`,
+      `${this.apiUrl}/myjobs/${proposalId}/workflow-status`,
       {
         userId: this.profile.id,
         role: this.profile.role,
@@ -535,7 +687,7 @@ export class MyjobComponent implements OnInit {
     }
 
     this.isLoadingActiveProjects = true;
-    this.http.get<ActiveMyjobRecord[]>(`${environment.apiUrl}/myjobs/active`, {
+    this.http.get<ActiveMyjobRecord[]>(`${this.apiUrl}/myjobs/active`, {
       params: {
         userId: this.profile.id,
         role: this.profile.role
@@ -549,9 +701,7 @@ export class MyjobComponent implements OnInit {
       error: (error) => {
         this.isLoadingActiveProjects = false;
         this.activeProjects = [];
-        this.activeProjectsError = error?.error?.errors
-          ? Object.values(error.error.errors).join(' ')
-          : 'Unable to load your active tasks right now.';
+        this.activeProjectsError = this.getErrorMessage(error, 'Unable to load your active tasks right now.');
       }
     });
   }
@@ -567,7 +717,7 @@ export class MyjobComponent implements OnInit {
     }
 
     this.isLoadingDrafts = true;
-    this.http.get<SendProposalRecord[]>(`${environment.apiUrl}/send-proposals`, {
+    this.http.get<SendProposalRecord[]>(`${this.apiUrl}/send-proposals`, {
       params: {
         userId: this.profile.id,
         role: this.profile.role
@@ -580,9 +730,7 @@ export class MyjobComponent implements OnInit {
       error: (error) => {
         this.isLoadingDrafts = false;
         this.draftProposals = [];
-        this.draftsError = error?.error?.errors
-          ? Object.values(error.error.errors).join(' ')
-          : 'Unable to load your proposal drafts right now.';
+        this.draftsError = this.getErrorMessage(error, 'Unable to load your proposal drafts right now.');
       }
     });
   }
@@ -591,7 +739,7 @@ export class MyjobComponent implements OnInit {
     this.isLoadingSelectedProject = true;
     this.selectedProjectError = '';
 
-    this.http.get<ProjectDetailsResponse>(`${environment.apiUrl}/projects/${projectId}`).subscribe({
+    this.http.get<ProjectDetailsResponse>(`${this.apiUrl}/projects/${projectId}`).subscribe({
       next: (project) => {
         this.isLoadingSelectedProject = false;
         this.selectedProjectDescription = project.description || this.selectedProjectDescription;
@@ -602,9 +750,63 @@ export class MyjobComponent implements OnInit {
       },
       error: (error) => {
         this.isLoadingSelectedProject = false;
-        this.selectedProjectError = error?.error?.error || 'Unable to load this project brief right now.';
+        this.selectedProjectError = this.getErrorMessage(error, 'Unable to load this project brief right now.');
       }
     });
+  }
+
+  private loadProjectSprints(project: MyjobActiveProjectCard): void {
+    if (!this.profile?.id || !this.profile?.role || !project.projectId) {
+      return;
+    }
+
+    this.http.get<any[]>(`${this.apiUrl}/sprints`, {
+      params: {
+        projectId: project.projectId,
+        clientId: project.clientId || '',
+        freelancerId: project.freelancerId || '',
+        userId: this.profile.id,
+        role: this.profile.role
+      }
+    }).subscribe({
+      next: (sprints) => {
+        const normalizedSprints = Array.isArray(sprints)
+          ? sprints.map((item) => this.normalizeSprintRecord(item))
+          : [];
+
+        const selectedProject = this.selectedProject;
+        if (selectedProject && selectedProject.proposalId === project.proposalId) {
+          selectedProject.sprints = normalizedSprints;
+          selectedProject.hasUnpaidSubmittedSprints = this.hasUnpaidSubmittedSprints(normalizedSprints);
+        }
+
+        this.activeProjects = this.activeProjects.map((activeProject) =>
+          activeProject.proposalId === project.proposalId
+            ? { ...activeProject, sprints: normalizedSprints, hasUnpaidSubmittedSprints: this.hasUnpaidSubmittedSprints(normalizedSprints) }
+            : activeProject
+        );
+      },
+      error: () => {
+        // ignore sprint loading failures for now; existing active project state remains usable
+      }
+    });
+  }
+
+  private normalizeSprintRecord(record: any): SprintRecord {
+    return {
+      sprintId: record.id,
+      sprintNumber: record.sprintNumber || 0,
+      title: record.title || `Sprint ${record.sprintNumber || 0}`,
+      description: record.description || '',
+      status: record.status === 'paid' ? 'paid' : 'unpaid',
+      price: record.price || 0,
+      deliveryMessage: record.deliveryMessage || '',
+      deliveryFiles: Array.isArray(record.deliveryFiles) ? record.deliveryFiles : [],
+      submittedAtLabel: record.deliveredAtLabel || record.submittedAtLabel || '',
+      paidAtLabel: record.paidAtLabel || '',
+      submittedAt: record.deliveredAtLabel || record.submittedAtLabel || undefined,
+      canAccessFiles: !!record.canAccessFiles,
+    };
   }
 
   private updateProposalStatus(proposalId: string, action: 'accept' | 'refuse'): void {
@@ -617,7 +819,7 @@ export class MyjobComponent implements OnInit {
     this.actionMessage = '';
     this.draftsError = '';
 
-    this.http.patch<{ message: string }>(`${environment.apiUrl}/send-proposals/${proposalId}`, {
+    this.http.patch<{ message: string }>(`${this.apiUrl}/send-proposals/${proposalId}`, {
       action,
       userId: this.profile.id,
       role: this.profile.role
@@ -630,9 +832,7 @@ export class MyjobComponent implements OnInit {
       },
       error: (error) => {
         this.processingProposalId = '';
-        this.draftsError = error?.error?.errors
-          ? Object.values(error.error.errors).join(' ')
-          : 'Unable to update this proposal right now.';
+        this.draftsError = this.getErrorMessage(error, 'Unable to update this proposal right now.');
       }
     });
   }
@@ -662,6 +862,11 @@ export class MyjobComponent implements OnInit {
       deliveryMessage: record.deliveryMessage,
       deliveryFiles: Array.isArray(record.deliveryFiles) ? record.deliveryFiles : [],
       deliverySubmittedAtLabel: record.deliverySubmittedAtLabel,
+      sprints: record.sprints,
+      totalPaidAmount: record.totalPaidAmount,
+      remainingBudgetAmount: record.remainingBudgetAmount,
+      hasUnreadUpdate: record.hasUnreadUpdate,
+      hasUnpaidSubmittedSprints: (record.sprints || []).some(s => s.status === 'unpaid' && s.submittedAt),
       actionLabel: this.isFreelancer ? 'Submit Work' : undefined,
       actionIcon: this.isFreelancer ? 'arrow_forward' : undefined,
       actionDisabled: this.isClient
@@ -803,6 +1008,14 @@ export class MyjobComponent implements OnInit {
     return 'in-progress';
   }
 
+  private hasUnpaidSubmittedSprints(sprints?: SprintRecord[]): boolean {
+    if (!sprints || !Array.isArray(sprints)) {
+      return false;
+    }
+
+    return sprints.some(sprint => sprint.status === 'unpaid' && sprint.submittedAt);
+  }
+
   private formatProjectType(value?: string): string {
     if (!value) {
       return 'Project';
@@ -821,10 +1034,19 @@ export class MyjobComponent implements OnInit {
 
   private openFilePreview(fileName: string, fileData: string): void {
     this.previewTitle = fileName;
+    this.previewFileData = fileData;
     this.isPreviewPdf = fileData.startsWith('data:application/pdf');
     this.isPreviewImage = fileData.startsWith('data:image/');
     this.safePreviewUrl = this.sanitizer.bypassSecurityTrustResourceUrl(fileData);
     this.showFilePreview = true;
+  }
+
+  downloadPreviewFile(): void {
+    if (!this.previewFileData || !this.previewTitle) {
+      return;
+    }
+
+    this.downloadDataFile(this.previewTitle, this.previewFileData);
   }
 
   private downloadDataFile(fileName: string, fileData: string): void {
@@ -861,6 +1083,12 @@ export class MyjobComponent implements OnInit {
     const normalized = value.includes(',') ? value.split(',', 2)[1] : value;
     const padding = (normalized.match(/=/g) || []).length;
     return Math.max(0, Math.floor((normalized.length * 3) / 4) - padding);
+  }
+
+  private getErrorMessage(error: any, fallback: string): string {
+    return error?.error?.errors
+      ? Object.values(error.error.errors).join(' ')
+      : fallback;
   }
 
   private getStoredProfile(): StoredProfile | null {

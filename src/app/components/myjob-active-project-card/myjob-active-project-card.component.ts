@@ -7,12 +7,30 @@ export interface MyjobDeliveryFile {
   fileName: string;
   fileData: string;
   mimeType?: string;
+  sizeBytes?: number;
+}
+
+export interface SprintRecord {
+  sprintId: string;
+  sprintNumber: number;
+  title: string;
+  description: string;
+  status: 'unpaid' | 'paid';
+  price: number;
+  deliveryMessage: string;
+  deliveryFiles: MyjobDeliveryFile[];
+  submittedAtLabel: string;
+  paidAtLabel: string;
+  submittedAt?: string;
+  canAccessFiles: boolean;
 }
 
 export interface MyjobActiveProjectCard {
   id?: string;
   proposalId?: string;
   projectId?: string;
+  clientId?: string;
+  freelancerId?: string;
   title: string;
   orderId: string;
   timeLabel?: string;
@@ -36,9 +54,11 @@ export interface MyjobActiveProjectCard {
   deliveryMessage?: string;
   deliveryFiles?: MyjobDeliveryFile[];
   deliverySubmittedAtLabel?: string;
-  latestRequestedAmount?: number;
-  latestPaymentType?: 'paid' | 'unpaid';
-  latestDeliveryIsNew?: boolean;
+  sprints?: SprintRecord[];
+  totalPaidAmount?: number;
+  remainingBudgetAmount?: number;
+  hasUnreadUpdate?: boolean;
+  hasUnpaidSubmittedSprints?: boolean;
 }
 
 @Component({

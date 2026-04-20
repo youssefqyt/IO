@@ -26,6 +26,32 @@ interface StoredProfile {
   role?: 'freelancer' | 'client';
 }
 
+interface MarketplaceProjectOffer {
+  id?: string;
+  type: string;
+  mode: string;
+  budget: string;
+  deadline: string;
+  postedAt: string;
+  title: string;
+  desc: string;
+}
+
+interface BrowseProjectApiResponse {
+  id?: string;
+  type?: string;
+  time?: string;
+  badgeClass?: string;
+  title?: string;
+  description?: string;
+  label?: string;
+  amount?: string;
+  deadline?: string;
+  briefFileName?: string;
+  category?: string;
+  projectType?: string;
+}
+
 @Component({
   selector: 'app-market',
   templateUrl: './market.component.html',
@@ -42,26 +68,7 @@ export class MarketComponent implements OnInit {
   readonly categories = ['All Assets', 'Templates', 'Icons', '3D'];
   featuredAssets: MarketProduct[] = [];
 
-  readonly activeOffers = [
-    {
-      type: 'UX/UI DESIGN',
-      mode: 'REMOTE',
-      budget: '$2,400',
-      deadline: '14 Days',
-      postedAt: '2h ago',
-      title: 'Modern SaaS Landing Page',
-      desc: 'Looking for a designer to create a clean, minimalist landing page for a fintech startup.'
-    },
-    {
-      type: 'DEVELOPMENT',
-      mode: 'CONTRACT',
-      budget: '$4,500',
-      deadline: '21 Days',
-      postedAt: '5h ago',
-      title: 'E-commerce Mobile App',
-      desc: 'Full-stack developer needed for a React Native fashion marketplace application.'
-    }
-  ];
+  activeOffers: MarketplaceProjectOffer[] = [];
 
   constructor(
     private readonly router: Router,
@@ -70,6 +77,7 @@ export class MarketComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadProducts();
+    this.loadProjectOffers();
   }
 
   get filteredAssets(): MarketProduct[] {
@@ -132,6 +140,27 @@ export class MarketComponent implements OnInit {
       error: (error) => {
         console.error('Failed to load marketplace products', error);
         this.featuredAssets = [];
+      }
+    });
+  }
+
+  private loadProjectOffers(): void {
+    this.http.get<BrowseProjectApiResponse[]>(`${environment.apiUrl}/projects`).subscribe({
+      next: (projects) => {
+        this.activeOffers = projects.map((project) => ({
+          id: project.id,
+          type: project.type || project.category || 'PROJECT',
+          mode: project.projectType === 'hourly' ? 'HOURLY' : 'FIXED PRICE',
+          budget: project.amount || 'Budget not specified',
+          deadline: project.deadline || 'Deadline flexible',
+          postedAt: project.time || 'Recently posted',
+          title: project.title || 'Untitled project',
+          desc: project.description || 'No project description provided.'
+        }));
+      },
+      error: (error) => {
+        console.error('Failed to load marketplace project offers', error);
+        this.activeOffers = [];
       }
     });
   }

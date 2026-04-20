@@ -150,7 +150,6 @@ export class MyjobComponent implements OnInit {
   readonly workflowOptions: WorkflowOption[] = [
     { value: 'in-progress', label: 'In Progress' },
     { value: 'in-review', label: 'In Review' },
-    { value: 'completed', label: 'Completed' },
   ];
 
   showSubmission = false;

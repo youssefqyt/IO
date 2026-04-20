@@ -10,16 +10,48 @@ interface HomeProfile {
 }
 
 interface EarningsSummary {
-  totalEarnings: number;
-  paymentCount: number;
+  totalEarned: number;
+  currentMonthEarned: number;
   projectCount: number;
-  currency: string;
-  recentPayments: Array<{
-    projectId: string;
-    projectTitle: string;
-    amount: number;
-    paidAtLabel: string;
-  }>;
+  monthlyGoal: number;
+  progressPercent: number;
+}
+
+interface BrowseProjectSummary {
+  id: string;
+  type: string;
+  time: string;
+  title: string;
+  description: string;
+  amount: string;
+  deadline: string;
+  category?: string;
+}
+
+interface RecentProjectCard {
+  title: string;
+  price: string;
+  description: string;
+  tags: string[];
+}
+
+interface ActiveMyjobSummary {
+  proposalId: string;
+  projectTitle: string;
+  workflowStatus: string;
+  acceptedAtLabel?: string;
+  lastCommunicationAtLabel?: string;
+  client?: {
+    name?: string;
+  };
+}
+
+interface ActiveGigCard {
+  title: string;
+  company: string;
+  due: string;
+  progress: number;
+  colorClass: 'primary' | 'secondary';
 }
 
 @Component({
@@ -39,43 +71,13 @@ export class HomePage implements OnInit {
   isLoadingEarnings = false;
   earningsError = '';
 
-  readonly recentProjects = [
-    {
-      title: 'Brand Identity Design',
-      price: '$1,200',
-      description: 'Create a modern brand identity including logo, palette, and typography for a startup.',
-      tags: ['Branding', 'Logo']
-    },
-    {
-      title: 'iOS Fitness Tracker',
-      price: '$3,500',
-      description: 'Full UI/UX design and prototyping for a high-end wellness and fitness tracking app.',
-      tags: ['Mobile', 'UI/UX']
-    },
-    {
-      title: 'Shopify Headless CMS',
-      price: '$2,800',
-      description: 'Implementation of a headless Shopify storefront using React and Tailwind CSS.',
-      tags: ['Web', 'Development']
-    }
-  ];
+  recentProjects: RecentProjectCard[] = [];
+  isLoadingRecentProjects = false;
+  recentProjectsError = '';
 
-  readonly activeGigs = [
-    {
-      title: 'Mobile UI Design System',
-      company: 'TechNova Solutions',
-      due: 'Due in 2d',
-      progress: 85,
-      colorClass: 'secondary'
-    },
-    {
-      title: 'E-commerce Backend API',
-      company: 'LuxeRetail Co.',
-      due: 'Due in 5d',
-      progress: 40,
-      colorClass: 'primary'
-    }
-  ];
+  activeGigs: ActiveGigCard[] = [];
+  isLoadingActiveGigs = false;
+  activeGigsError = '';
 
   constructor(private readonly http: HttpClient) {
     this.loadProfile();
@@ -83,11 +85,15 @@ export class HomePage implements OnInit {
 
   ngOnInit(): void {
     this.loadEarnings();
+    this.loadRecentProjects();
+    this.loadActiveProjects();
   }
 
   ionViewWillEnter(): void {
     this.loadProfile();
     this.loadEarnings();
+    this.loadRecentProjects();
+    this.loadActiveProjects();
   }
 
   get firstName(): string {
@@ -107,14 +113,13 @@ export class HomePage implements OnInit {
     if (!this.earnings) return '$0.00';
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: this.earnings.currency || 'USD'
-    }).format(this.earnings.totalEarnings);
+      currency: 'USD'
+    }).format(this.earnings.totalEarned || 0);
   }
 
   get earningsProgressPercent(): number {
     if (!this.earnings) return 0;
-    const monthlyGoal = 7000; // This could be configurable
-    return Math.min((this.earnings.totalEarnings / monthlyGoal) * 100, 100);
+    return this.earnings.progressPercent || 0;
   }
 
   private loadProfile(): void {
@@ -159,5 +164,89 @@ export class HomePage implements OnInit {
           : 'Unable to load earnings right now.';
       }
     });
+  }
+
+  private loadRecentProjects(): void {
+    if (this.profile.role !== 'freelancer') {
+      this.recentProjects = [];
+      return;
+    }
+
+    this.isLoadingRecentProjects = true;
+    this.recentProjectsError = '';
+
+    this.http.get<BrowseProjectSummary[]>(`${environment.apiUrl}/projects`).subscribe({
+      next: (projects) => {
+        this.isLoadingRecentProjects = false;
+        this.recentProjects = (Array.isArray(projects) ? projects : []).slice(0, 6).map((project) => ({
+          title: project.title || 'Untitled Project',
+          price: project.amount || '$0',
+          description: project.description || 'No description provided.',
+          tags: [project.category || 'General', project.type || 'Project'].filter(Boolean)
+        }));
+      },
+      error: (error) => {
+        this.isLoadingRecentProjects = false;
+        this.recentProjects = [];
+        this.recentProjectsError = error?.error?.errors
+          ? Object.values(error.error.errors).join(' ')
+          : 'Unable to load recent projects right now.';
+      }
+    });
+  }
+
+  private loadActiveProjects(): void {
+    if (!this.profile.id || this.profile.role !== 'freelancer') {
+      this.activeGigs = [];
+      return;
+    }
+
+    this.isLoadingActiveGigs = true;
+    this.activeGigsError = '';
+
+    this.http.get<ActiveMyjobSummary[]>(`${environment.apiUrl}/myjobs/active`, {
+      params: { userId: this.profile.id, role: this.profile.role }
+    }).subscribe({
+      next: (projects) => {
+        this.isLoadingActiveGigs = false;
+        this.activeGigs = (Array.isArray(projects) ? projects : []).slice(0, 6).map((project) => ({
+          title: project.projectTitle || 'Untitled Project',
+          company: project.client?.name || 'Client Project',
+          due: this.mapActiveProjectBadge(project),
+          progress: this.mapWorkflowProgress(project.workflowStatus),
+          colorClass: project.workflowStatus === 'completed' ? 'secondary' : 'primary'
+        }));
+      },
+      error: (error) => {
+        this.isLoadingActiveGigs = false;
+        this.activeGigs = [];
+        this.activeGigsError = error?.error?.errors
+          ? Object.values(error.error.errors).join(' ')
+          : 'Unable to load active projects right now.';
+      }
+    });
+  }
+
+  private mapWorkflowProgress(status: string): number {
+    switch ((status || '').toLowerCase()) {
+      case 'completed':
+        return 100;
+      case 'in-review':
+        return 85;
+      case 'in-progress':
+      default:
+        return 45;
+    }
+  }
+
+  private mapActiveProjectBadge(project: ActiveMyjobSummary): string {
+    const workflowStatus = (project.workflowStatus || '').toLowerCase();
+    if (workflowStatus === 'completed') {
+      return 'Completed';
+    }
+    if (workflowStatus === 'in-review') {
+      return 'In Review';
+    }
+    return project.lastCommunicationAtLabel || project.acceptedAtLabel || 'Active';
   }
 }

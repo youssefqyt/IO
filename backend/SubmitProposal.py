@@ -161,31 +161,7 @@ def submit_proposal(db):
 
     result = db["SendProposal"].insert_one(proposal_document)
     
-    # Create an initial Sprint document for this proposal
-    sprint_doc = {
-        "proposalId": str(result.inserted_id),
-        "projectId": proposal_document["projectId"],
-        "clientId": proposal_document["clientId"],
-        "freelancerId": proposal_document["freelancerId"],
-        "sprintNumber": 1,
-        "price": proposal_document["bid"],
-        "paymentStatus": "unpaid",
-        "deliveryMessage": proposal_document["pitch"],
-        "deliveryFiles": [
-            {
-                "fileName": proposal_document["attachmentFileName"],
-                "fileData": proposal_document["attachmentFileData"],
-                "mimeType": "", 
-                "sizeBytes": 0
-            }
-        ] if proposal_document["attachmentFileName"] else [],
-        "deliveredAt": now,
-        "paidAt": None,
-        "revisionRequestMessage": "",
-        "revisionRequestedAt": None,
-        "createdAt": now,
-    }
-    db["Sprint"].insert_one(sprint_doc)
+    # Removed: Create an initial Sprint document for this proposal
 
     return jsonify({
         "message": "Proposal submitted successfully",

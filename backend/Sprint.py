@@ -288,6 +288,23 @@ def pay_sprint(db, sprint_id: str):
         {"$set": {"paymentStatus": "paid", "paidAt": charged_at}}
     )
 
+    # Also update the corresponding MyJobCommunication delivery record to reflect payment
+    sprint_number = sprint.get("sprintNumber")
+    db["MyJobCommunication"].update_one(
+        {
+            "proposalId": proposal_id,
+            "eventType": "delivery",
+            "deliverySequence": sprint_number
+        },
+        {
+            "$set": {
+                "approvedAmount": amount,
+                "paymentType": "paid",
+                "paidAt": charged_at
+            }
+        }
+    )
+
     current_total_paid = _safe_float(job.get("totalPaidAmount"), 0)
     new_total_paid = round(current_total_paid + amount, 2)
     contract_amount = _safe_float(job.get("contractAmount"), 0)

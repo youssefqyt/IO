@@ -11,7 +11,7 @@ from Messages import get_conversations, get_messages, send_message, mark_message
 from AddProject import add_project
 from BrowseProject import get_projects, get_project_details
 from SubmitProposal import submit_proposal, get_send_proposals, update_send_proposal_status
-from Myjob import get_active_myjobs, update_myjob_workflow_status, deliver_myjob_assets, mark_delivery_viewed
+from Myjob import get_active_myjobs, update_myjob_workflow_status, deliver_myjob_assets, mark_delivery_viewed, get_myjob_detail
 from Pay import pay_product, release_myjob_payment
 from Sprint import create_sprint, get_sprints_for_proposal, get_sprints_by_filters, pay_sprint
 
@@ -102,6 +102,11 @@ def change_send_proposal_status(proposal_id):
 @app.route('/api/myjobs/active', methods=['GET'])
 def list_active_myjobs():
     return get_active_myjobs(db)
+
+
+@app.route('/api/myjobs/<proposal_id>', methods=['GET'])
+def get_myjob_detail_route(proposal_id):
+    return get_myjob_detail(db, proposal_id)
 
 
 @app.route('/api/myjobs/<proposal_id>/workflow-status', methods=['PATCH'])

@@ -74,8 +74,8 @@
             <div *ngSwitchCase="'product'">
               <div class="mb-4 overflow-hidden rounded-[1.25rem] bg-slate-100 dark:bg-slate-700">
                 <img
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuCWjucgX1U8wZpeuO1l8KI9K1jhSxKabyVh0_7s2zWGKtJGFFiJakdLXynMUD0EifXpLOG-9Yd2gJvt4ptxUW53wNZomg5XWLv8EieVMhvqahOw4z6keY8EZOE1hpUpHW9Mzd4PM1uvya4F4VkdHP-TaZc8XKYNqIWf8K14vy13NTd8i6LJVAvz-wpjcF--aEzqvsZodJsLnxvZTqkJaX6R02_zuCxT5_eP6gkuOtsRy9Ew_k_cdrlQ5rpbiew9RGOJ7BDsVq3AIPqV"
-                  alt="Dashboard product preview"
+                  [src]="offer.image || ''"
+                  [alt]="offer.alt || offer.title"
                   class="h-44 w-full object-cover"
                 />
               </div>

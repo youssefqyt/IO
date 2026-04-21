@@ -3,6 +3,20 @@ from datetime import datetime, timezone
 from bson import ObjectId
 
 
+def _find_user_by_id(db, collection_name, user_id):
+    if not user_id:
+        return None
+
+    user = db[collection_name].find_one({"_id": user_id})
+    if user:
+        return user
+
+    if ObjectId.is_valid(user_id):
+        return db[collection_name].find_one({"_id": ObjectId(user_id)})
+
+    return None
+
+
 def _format_relative_time(value):
     if not isinstance(value, datetime):
         return "Just now"
@@ -87,7 +101,7 @@ def get_conversations(db):
 
             other_user = None
             if other_user_id:
-                other_user_doc = db[other_user_collection].find_one({"_id": other_user_id})
+                other_user_doc = _find_user_by_id(db, other_user_collection, other_user_id)
                 if other_user_doc:
                     other_user = {
                         "id": str(other_user_doc.get("_id")),
@@ -106,7 +120,7 @@ def get_conversations(db):
             conversations.append({
                 "conversationId": conversation_id,
                 "projectId": data.get("projectId", ""),
-                "name": other_user.get("name", "Unknown") if other_user else "Unknown",
+                "name": "UNKNOWN",
                 "otherUserId": other_user.get("id", "") if other_user else "",
                 "lastMessage": data.get("lastMessage", ""),
                 "time": _format_relative_time(data.get("lastMessageTime")),
@@ -126,6 +140,8 @@ def _format_message_doc(message_doc):
         "id": str(message_doc.get("_id")) if message_doc.get("_id") else "",
         "conversationId": message_doc.get("conversationId", ""),
         "projectId": message_doc.get("projectId", ""),
+        "clientId": message_doc.get("clientId", ""),
+        "freelancerId": message_doc.get("freelancerId", ""),
         "senderId": message_doc.get("senderId", ""),
         "receiverId": message_doc.get("receiverId", ""),
         "senderRole": message_doc.get("senderRole", ""),
@@ -189,8 +205,17 @@ def send_message(db):
         if sender_role not in {"client", "freelancer"}:
             return jsonify({"errors": {"senderRole": "senderRole must be client or freelancer"}}), 400
 
+        if sender_role == "client":
+            client_id = client_id or sender_id
+            freelancer_id = freelancer_id or receiver_id
+        else:
+            freelancer_id = freelancer_id or sender_id
+            client_id = client_id or receiver_id
+
+        if not client_id or not freelancer_id:
+            return jsonify({"errors": {"participants": "clientId and freelancerId are required"}}), 400
+
         if not conversation_id:
-            # Ensure consistent ordering: project_id|smaller_id|larger_id
             ids = sorted([client_id, freelancer_id])
             conversation_id = f"{project_id}|{ids[0]}|{ids[1]}"
 
@@ -205,17 +230,17 @@ def send_message(db):
             "senderRole": sender_role,
             "message": message_text,
             "eventType": "chat",
-            "isRead": False,  # Mark as unread initially
+            "isRead": False,
             "createdAt": now,
         }
 
         result = db["Message"].insert_one(message_doc)
-        message_doc["id"] = str(result.inserted_id)
-        message_doc["time"] = _format_relative_time(now)
-        if hasattr(now, 'isoformat'):
-            message_doc["createdAt"] = now.isoformat()
+        saved_message = _format_message_doc({**message_doc, "_id": result.inserted_id})
 
-        return jsonify(message_doc), 201
+        if hasattr(now, "isoformat"):
+            saved_message["createdAt"] = now.isoformat()
+
+        return jsonify(saved_message), 201
 
     except Exception as error:
         return jsonify({"message": "Failed to send message", "error": str(error)}), 500

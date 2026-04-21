@@ -104,6 +104,14 @@
             <div class="review-card__top">
               <div>
                 <p class="review-card__project">{{ review.projectTitle || 'Untitled Project' }}</p>
+                <div class="review-card__meta">
+                  <span class="review-card__chip" *ngIf="review.projectCategory">
+                    {{ review.projectCategory }}
+                  </span>
+                  <span class="review-card__chip review-card__chip--price">
+                    {{ formatPrice(review.projectPrice) }}
+                  </span>
+                </div>
                 <p class="review-card__date" *ngIf="review.updatedAt || review.createdAt">
                   {{ (review.updatedAt || review.createdAt) | date:'mediumDate' }}
                 </p>

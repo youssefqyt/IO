@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
@@ -33,13 +33,43 @@ interface Profile {
   standalone: true,
   imports: [CommonModule, FormsModule, IonicModule, RouterModule]
 })
-export class MessageComponent implements OnInit {
+export class MessageComponent implements OnInit, OnDestroy {
   searchTerm = '';
   conversations: Conversation[] = [];
+  private pollingTimer?: number;
 
   constructor(private readonly http: HttpClient) {}
 
   ngOnInit(): void {
+    this.refreshConversations();
+    this.startPolling();
+  }
+
+  ionViewWillEnter(): void {
+    this.refreshConversations();
+  }
+
+  ngOnDestroy(): void {
+    this.stopPolling();
+  }
+
+  private startPolling(): void {
+    this.stopPolling();
+    this.pollingTimer = window.setInterval(() => {
+      if (!document.hidden) {
+        this.loadConversations();
+      }
+    }, 10000);
+  }
+
+  private stopPolling(): void {
+    if (this.pollingTimer) {
+      window.clearInterval(this.pollingTimer);
+      this.pollingTimer = undefined;
+    }
+  }
+
+  private refreshConversations(): void {
     this.loadConversations();
   }
 

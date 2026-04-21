@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 
+from bson import ObjectId
 from flask import jsonify, request
 
 
@@ -12,6 +13,101 @@ def _safe_rating(value):
         return int(value)
     except (TypeError, ValueError):
         return 0
+
+
+def _safe_float(value, default=0.0):
+    try:
+        return round(float(value), 2)
+    except (TypeError, ValueError):
+        return round(float(default), 2)
+
+
+def _find_project_document(db, project_id):
+    if not project_id or not ObjectId.is_valid(project_id):
+        return None
+    return db["Project"].find_one({"_id": ObjectId(project_id)})
+
+
+def _find_history_record(db, proposal_id="", project_id="", client_id="", freelancer_id=""):
+    queries = []
+
+    if project_id and client_id and freelancer_id:
+        queries.append({
+            "projectId": project_id,
+            "clientId": client_id,
+            "freelancerId": freelancer_id,
+        })
+
+    if proposal_id and client_id and freelancer_id:
+        queries.append({
+            "proposalId": proposal_id,
+            "clientId": client_id,
+            "freelancerId": freelancer_id,
+        })
+
+    if project_id:
+        queries.append({"projectId": project_id})
+
+    if proposal_id:
+        queries.append({"proposalId": proposal_id})
+
+    for query in queries:
+        history_record = db["ProjectHistory"].find_one(query)
+        if history_record:
+            return history_record
+
+    return None
+
+
+def _resolve_project_metadata(
+    db,
+    proposal_id="",
+    project_id="",
+    project_title="",
+    client_id="",
+    freelancer_id="",
+    project_category="",
+    project_price=None,
+):
+    history_record = _find_history_record(
+        db,
+        proposal_id=proposal_id,
+        project_id=project_id,
+        client_id=client_id,
+        freelancer_id=freelancer_id,
+    )
+    project_document = _find_project_document(db, project_id)
+
+    resolved_title = (
+        str(project_title or "").strip()
+        or str((history_record or {}).get("projectTitle") or "").strip()
+        or str((project_document or {}).get("title") or "").strip()
+        or "Untitled Project"
+    )
+
+    resolved_category = (
+        str(project_category or "").strip()
+        or str((history_record or {}).get("projectCategory") or "").strip()
+        or str((project_document or {}).get("category") or "").strip()
+    )
+
+    resolved_price = _safe_float(project_price, 0)
+    if resolved_price <= 0:
+        for candidate in (
+            (history_record or {}).get("totalPrice"),
+            (history_record or {}).get("contractAmount"),
+            (project_document or {}).get("budget"),
+        ):
+            resolved_price = _safe_float(candidate, 0)
+            if resolved_price > 0:
+                break
+
+    return {
+        "historyRecord": history_record,
+        "projectTitle": resolved_title,
+        "projectCategory": resolved_category,
+        "projectPrice": resolved_price,
+    }
 
 
 def _build_review_payload(document):
@@ -29,6 +125,8 @@ def _build_review_payload(document):
         "proposalId": document.get("proposalId", ""),
         "projectId": document.get("projectId", ""),
         "projectTitle": document.get("projectTitle", "Untitled Project"),
+        "projectCategory": document.get("projectCategory", ""),
+        "projectPrice": _safe_float(document.get("projectPrice"), 0),
         "clientId": document.get("clientId", ""),
         "freelancerId": document.get("freelancerId", ""),
         "professionalismRating": professionalism,
@@ -47,6 +145,8 @@ def create_or_update_rate(db):
     proposal_id = str(data.get("proposalId") or "").strip()
     project_id = str(data.get("projectId") or "").strip()
     project_title = str(data.get("projectTitle") or "").strip()
+    project_category = str(data.get("projectCategory") or "").strip()
+    project_price = data.get("projectPrice")
     client_id = str(data.get("clientId") or "").strip()
     freelancer_id = str(data.get("freelancerId") or "").strip()
 
@@ -82,23 +182,26 @@ def create_or_update_rate(db):
     if errors:
         return jsonify({"errors": errors}), 400
 
-    history_query = {}
-    if proposal_id:
-      history_query["proposalId"] = proposal_id
-    if project_id:
-      history_query["projectId"] = project_id
-    if client_id:
-      history_query["clientId"] = client_id
-    if freelancer_id:
-      history_query["freelancerId"] = freelancer_id
-
-    history_record = db["ProjectHistory"].find_one(history_query) if history_query else None
+    project_metadata = _resolve_project_metadata(
+        db,
+        proposal_id=proposal_id,
+        project_id=project_id,
+        project_title=project_title,
+        client_id=client_id,
+        freelancer_id=freelancer_id,
+        project_category=project_category,
+        project_price=project_price,
+    )
+    history_record = project_metadata["historyRecord"]
     if history_record:
         proposal_id = proposal_id or str(history_record.get("proposalId", "")).strip()
         project_id = project_id or str(history_record.get("projectId", "")).strip()
-        project_title = project_title or str(history_record.get("projectTitle", "")).strip()
         client_id = str(history_record.get("clientId", client_id)).strip()
         freelancer_id = str(history_record.get("freelancerId", freelancer_id)).strip()
+
+    project_title = project_metadata["projectTitle"]
+    project_category = project_metadata["projectCategory"]
+    project_price = project_metadata["projectPrice"]
 
     overall_rating = round((professionalism_rating + quality_of_code_rating) / 2, 2)
     now = _now_utc()
@@ -119,6 +222,8 @@ def create_or_update_rate(db):
                 "proposalId": proposal_id,
                 "projectId": project_id,
                 "projectTitle": project_title or "Untitled Project",
+                "projectCategory": project_category,
+                "projectPrice": _safe_float(project_price, 0),
                 "clientId": client_id,
                 "freelancerId": freelancer_id,
                 "professionalismRating": professionalism_rating,
@@ -155,7 +260,23 @@ def get_reviews(db):
     overall_total = 0
 
     for document in db["Rate"].find({"freelancerId": freelancer_id}).sort("updatedAt", -1):
-        review = _build_review_payload(document)
+        normalized_document = dict(document)
+        if not str(normalized_document.get("projectCategory") or "").strip() or _safe_float(normalized_document.get("projectPrice"), 0) <= 0:
+            project_metadata = _resolve_project_metadata(
+                db,
+                proposal_id=str(normalized_document.get("proposalId") or "").strip(),
+                project_id=str(normalized_document.get("projectId") or "").strip(),
+                project_title=str(normalized_document.get("projectTitle") or "").strip(),
+                client_id=str(normalized_document.get("clientId") or "").strip(),
+                freelancer_id=str(normalized_document.get("freelancerId") or "").strip(),
+                project_category=str(normalized_document.get("projectCategory") or "").strip(),
+                project_price=normalized_document.get("projectPrice"),
+            )
+            normalized_document["projectTitle"] = project_metadata["projectTitle"]
+            normalized_document["projectCategory"] = project_metadata["projectCategory"]
+            normalized_document["projectPrice"] = project_metadata["projectPrice"]
+
+        review = _build_review_payload(normalized_document)
         reviews.append(review)
         professionalism_total += review["professionalismRating"]
         quality_total += review["qualityOfCodeRating"]

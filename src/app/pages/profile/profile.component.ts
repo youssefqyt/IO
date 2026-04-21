@@ -24,6 +24,8 @@ interface FreelancerReview {
   proposalId: string;
   projectId: string;
   projectTitle: string;
+  projectCategory?: string;
+  projectPrice?: number;
   clientId: string;
   freelancerId: string;
   professionalismRating: number;
@@ -172,6 +174,14 @@ export class ProfileComponent implements OnInit {
   getStars(value: number): number[] {
     const rounded = Math.round(value || 0);
     return [1, 2, 3, 4, 5].map((star) => (star <= rounded ? 1 : 0));
+  }
+
+  formatPrice(value?: number): string {
+    if (typeof value !== 'number' || Number.isNaN(value) || value <= 0) {
+      return 'Price not specified';
+    }
+
+    return `$${value.toLocaleString()}`;
   }
 
   openCvPreview(): void {

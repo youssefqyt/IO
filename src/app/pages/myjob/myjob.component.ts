@@ -10,7 +10,8 @@ import {
   MyjobActiveProjectCard,
   MyjobActiveProjectCardComponent,
   MyjobDeliveryFile,
-  MyjobWorkflowStatus
+  MyjobWorkflowStatus,
+  SprintRecord
 } from '../../components/myjob-active-project-card/myjob-active-project-card.component';
 
 type UserRole = 'freelancer' | 'client';
@@ -48,21 +49,6 @@ interface SendProposalRecord {
   createdAtLabel: string;
   client?: ProposalParty;
   freelancer?: ProposalParty;
-}
-
-interface SprintRecord {
-  sprintId: string;
-  sprintNumber: number;
-  title: string;
-  description: string;
-  status: 'unpaid' | 'paid';
-  price: number;
-  deliveryMessage: string;
-  deliveryFiles: MyjobDeliveryFile[];
-  submittedAtLabel: string;
-  paidAtLabel: string;
-  submittedAt?: string;
-  canAccessFiles: boolean;
 }
 
 interface ActiveMyjobRecord {
@@ -141,6 +127,8 @@ interface ReviewProjectContext {
   proposalId?: string;
   projectId?: string;
   projectTitle?: string;
+  projectCategory?: string;
+  projectPrice?: number;
   clientId?: string;
   freelancerId?: string;
 }
@@ -229,15 +217,11 @@ export class MyjobComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.profile = this.getStoredProfile();
-    this.loadActiveProjects();
-    this.loadDraftProposals();
+    this.refreshPageData();
   }
 
   ionViewWillEnter(): void {
-    this.profile = this.getStoredProfile();
-    this.loadActiveProjects();
-    this.loadDraftProposals();
+    this.refreshPageData();
   }
 
   goBack(): void {
@@ -310,6 +294,8 @@ export class MyjobComponent implements OnInit {
               proposalId: this.selectedProject.proposalId,
               projectId: this.selectedProject.projectId,
               projectTitle: this.selectedProject.title,
+              projectCategory: this.selectedProjectCategory || '',
+              projectPrice: response.totalPrice || this.selectedProject.projectBudget || 0,
               clientId: this.selectedProject.clientId,
               freelancerId: this.selectedProject.freelancerId
             }
@@ -382,27 +368,12 @@ export class MyjobComponent implements OnInit {
 
   closeProjectDetails(): void {
     this.selectedProject = null;
-    this.isLoadingSelectedProject = false;
-    this.isUpdatingProjectStatus = false;
-    this.selectedProjectError = '';
-    this.statusUpdateMessage = '';
-    this.selectedProjectDescription = '';
-    this.selectedProjectCategory = '';
-    this.selectedProjectType = '';
-    this.selectedProjectBriefFileName = '';
-    this.selectedProjectBriefFileData = '';
+    this.resetSelectedProjectState();
   }
 
   closeSubmission(): void {
     this.showSubmission = false;
-    this.isReadingDeliveryFiles = false;
-    this.isSubmittingDelivery = false;
-    this.deliveryError = '';
-    this.deliverySuccessMessage = '';
-    this.deliveryMessage = '';
-    this.deliveryPrice = 0;
-    this.deliveryFiles = [];
-    this.submissionProject = null;
+    this.resetSubmissionState();
   }
 
   closePaymentModal(): void {
@@ -504,14 +475,12 @@ export class MyjobComponent implements OnInit {
 
   setReviewProfessionalism(rating: number): void {
     this.reviewProfessionalism = rating;
-    this.reviewError = '';
-    this.reviewSuccessMessage = '';
+    this.clearReviewMessages();
   }
 
   setReviewQualityOfCode(rating: number): void {
     this.reviewQualityOfCode = rating;
-    this.reviewError = '';
-    this.reviewSuccessMessage = '';
+    this.clearReviewMessages();
   }
 
   submitFreelancerReview(): void {
@@ -535,6 +504,8 @@ export class MyjobComponent implements OnInit {
       proposalId: this.reviewProject.proposalId || '',
       projectId: this.reviewProject.projectId || '',
       projectTitle: this.reviewProject.projectTitle || '',
+      projectCategory: this.reviewProject.projectCategory || '',
+      projectPrice: this.reviewProject.projectPrice || 0,
       clientId: this.reviewProject.clientId || this.profile.id,
       freelancerId: this.reviewProject.freelancerId,
       professionalismRating: this.reviewProfessionalism,
@@ -779,31 +750,12 @@ export class MyjobComponent implements OnInit {
 
   get selectedProjectMilestones(): TaskMilestone[] {
     const status = this.selectedProject?.workflowStatus || 'in-progress';
+    const currentIndex = status === 'completed' ? 4 : status === 'in-review' ? 2 : 1;
 
-    if (status === 'completed') {
-      return [
-        { title: 'Kickoff & alignment', state: 'done' },
-        { title: 'Production work', state: 'done' },
-        { title: 'Client review', state: 'done' },
-        { title: 'Final delivery', state: 'done' },
-      ];
-    }
-
-    if (status === 'in-review') {
-      return [
-        { title: 'Kickoff & alignment', state: 'done' },
-        { title: 'Production work', state: 'done' },
-        { title: 'Client review', state: 'current' },
-        { title: 'Final delivery', state: 'pending' },
-      ];
-    }
-
-    return [
-      { title: 'Kickoff & alignment', state: 'done' },
-      { title: 'Production work', state: 'current' },
-      { title: 'Client review', state: 'pending' },
-      { title: 'Final delivery', state: 'pending' },
-    ];
+    return ['Kickoff & alignment', 'Production work', 'Client review', 'Final delivery'].map((title, index) => ({
+      title,
+      state: index < currentIndex ? 'done' : index === currentIndex ? 'current' : 'pending'
+    }));
   }
 
   get selectedProjectCounterpartyLabel(): string {
@@ -1048,20 +1000,10 @@ export class MyjobComponent implements OnInit {
   }
 
   private applyWorkflowStatus(proposalId: string, workflowStatus: MyjobWorkflowStatus): void {
-    this.activeProjects = this.activeProjects.map((project) => (
-      project.proposalId === proposalId
-        ? this.decorateProjectCard(project, workflowStatus)
-        : project
-    ));
-
-    const updatedProject = this.activeProjects.find((project) => project.proposalId === proposalId) || null;
-    if (updatedProject && this.selectedProject?.proposalId === proposalId) {
-      this.selectedProject = updatedProject;
-    }
-
-    if (updatedProject && this.submissionProject?.proposalId === proposalId) {
-      this.submissionProject = updatedProject;
-    }
+    this.updateProjectInList(
+      proposalId,
+      (project) => this.decorateProjectCard(project, workflowStatus)
+    );
   }
 
   private applyDeliveryUpdate(
@@ -1071,43 +1013,17 @@ export class MyjobComponent implements OnInit {
     deliveryMessage: string,
     deliverySubmittedAtLabel: string
   ): void {
-    this.activeProjects = this.activeProjects.map((project) => {
-      if (project.proposalId !== proposalId) {
-        return project;
-      }
-
-      return this.decorateProjectCard({
-        ...project,
-        deliveryFiles,
-        deliveryMessage,
-        deliverySubmittedAtLabel
-      }, workflowStatus);
-    });
-
-    const updatedProject = this.activeProjects.find((project) => project.proposalId === proposalId) || null;
-    if (updatedProject && this.selectedProject?.proposalId === proposalId) {
-      this.selectedProject = updatedProject;
-    }
-
-    if (updatedProject && this.submissionProject?.proposalId === proposalId) {
-      this.submissionProject = updatedProject;
-    }
+    this.updateProjectInList(proposalId, (project) => this.decorateProjectCard({
+      ...project,
+      deliveryFiles,
+      deliveryMessage,
+      deliverySubmittedAtLabel
+    }, workflowStatus));
   }
 
   private refreshOpenProjectState(): void {
-    if (this.selectedProject?.proposalId) {
-      const updatedSelectedProject = this.activeProjects.find((project) => project.proposalId === this.selectedProject?.proposalId);
-      if (updatedSelectedProject) {
-        this.selectedProject = updatedSelectedProject;
-      }
-    }
-
-    if (this.submissionProject?.proposalId) {
-      const updatedSubmissionProject = this.activeProjects.find((project) => project.proposalId === this.submissionProject?.proposalId);
-      if (updatedSubmissionProject) {
-        this.submissionProject = updatedSubmissionProject;
-      }
-    }
+    this.syncProjectReference('selectedProject');
+    this.syncProjectReference('submissionProject');
   }
 
   private getWorkflowMeta(status: MyjobWorkflowStatus): WorkflowMeta {
@@ -1159,35 +1075,18 @@ export class MyjobComponent implements OnInit {
       return 'completed';
     }
 
-    if (value === 'in-review' || value === 'review') {
-      return 'in-review';
-    }
-
-    return 'in-progress';
+    return value === 'in-review' || value === 'review' ? 'in-review' : 'in-progress';
   }
 
   private hasUnpaidSubmittedSprints(sprints?: SprintRecord[]): boolean {
-    if (!sprints || !Array.isArray(sprints)) {
-      return false;
-    }
-
-    return sprints.some(sprint => sprint.status === 'unpaid' && sprint.submittedAt);
+    return !!sprints?.some((sprint) => sprint.status === 'unpaid' && sprint.submittedAt);
   }
 
   private formatProjectType(value?: string): string {
-    if (!value) {
-      return 'Project';
-    }
-
-    if (value === 'fixed-price') {
-      return 'Fixed Price';
-    }
-
-    if (value === 'hourly') {
-      return 'Hourly';
-    }
-
-    return 'Project';
+    return {
+      'fixed-price': 'Fixed Price',
+      hourly: 'Hourly'
+    }[value || ''] || 'Project';
   }
 
   private openFilePreview(fileName: string, fileData: string): void {
@@ -1215,6 +1114,68 @@ export class MyjobComponent implements OnInit {
     document.body.appendChild(anchor);
     anchor.click();
     document.body.removeChild(anchor);
+  }
+
+  private refreshPageData(): void {
+    this.profile = this.getStoredProfile();
+    this.loadActiveProjects();
+    this.loadDraftProposals();
+  }
+
+  private resetSelectedProjectState(): void {
+    this.isLoadingSelectedProject = false;
+    this.isUpdatingProjectStatus = false;
+    this.selectedProjectError = '';
+    this.statusUpdateMessage = '';
+    this.selectedProjectDescription = '';
+    this.selectedProjectCategory = '';
+    this.selectedProjectType = '';
+    this.selectedProjectBriefFileName = '';
+    this.selectedProjectBriefFileData = '';
+  }
+
+  private resetSubmissionState(): void {
+    this.isReadingDeliveryFiles = false;
+    this.isSubmittingDelivery = false;
+    this.deliveryError = '';
+    this.deliverySuccessMessage = '';
+    this.deliveryMessage = '';
+    this.deliveryPrice = 0;
+    this.deliveryFiles = [];
+    this.submissionProject = null;
+  }
+
+  private clearReviewMessages(): void {
+    this.reviewError = '';
+    this.reviewSuccessMessage = '';
+  }
+
+  private updateProjectInList(
+    proposalId: string,
+    updater: (project: MyjobActiveProjectCard) => MyjobActiveProjectCard
+  ): void {
+    this.activeProjects = this.activeProjects.map((project) => (
+      project.proposalId === proposalId ? updater(project) : project
+    ));
+    this.syncProjectReference('selectedProject', proposalId);
+    this.syncProjectReference('submissionProject', proposalId);
+  }
+
+  private syncProjectReference(
+    key: 'selectedProject' | 'submissionProject',
+    proposalId?: string
+  ): void {
+    const currentProject = this[key];
+    const currentProposalId = proposalId || currentProject?.proposalId;
+
+    if (!currentProposalId) {
+      return;
+    }
+
+    const updatedProject = this.activeProjects.find((project) => project.proposalId === currentProposalId) || null;
+    if (updatedProject && currentProject?.proposalId === currentProposalId) {
+      this[key] = updatedProject;
+    }
   }
 
   private readDeliveryFile(file: File): Promise<MyjobDeliveryFile> {

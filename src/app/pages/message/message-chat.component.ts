@@ -10,6 +10,8 @@ interface ChatMessage {
   id?: string;
   conversationId: string;
   projectId?: string;
+  clientId?: string;
+  freelancerId?: string;
   senderId: string;
   receiverId: string;
   senderRole: 'client' | 'freelancer';
@@ -190,6 +192,8 @@ export class MessageChatComponent implements OnInit, OnDestroy {
       id: `temp-${Date.now()}`,
       conversationId,
       projectId: this.projectId,
+      clientId: payload.clientId,
+      freelancerId: payload.freelancerId,
       senderId: this.profile.id,
       receiverId: this.otherUserId,
       senderRole: this.profile.role,

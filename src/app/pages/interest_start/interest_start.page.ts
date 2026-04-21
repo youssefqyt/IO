@@ -1,7 +1,15 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
 import { IonicModule } from '@ionic/angular';
 import { Router } from '@angular/router';
+
+import { Interest } from '../../models/interest.model';
+import { environment } from '../../../environments/environment';
+
+interface InterestApiResponse {
+  interests?: Interest[];
+}
 
 @Component({
   selector: 'app-interest-start',
@@ -11,12 +19,51 @@ import { Router } from '@angular/router';
   imports: [CommonModule, IonicModule]
 })
 export class InterestStartPage implements OnInit {
-  interests: Array<{ name: string; icon: string; selected: boolean }> = [];
+  interests: Interest[] = [];
 
-  constructor(private readonly router: Router) {}
+  constructor(
+    private readonly router: Router,
+    private readonly http: HttpClient
+  ) {}
 
   ngOnInit(): void {
-    this.interests = [
+    this.loadInterests();
+  }
+
+  toggleInterest(item: Interest): void {
+    item.selected = !item.selected;
+  }
+
+  get progressPercent(): number {
+    const selectedCount = this.interests.filter((item) => item.selected).length;
+    return Math.min(selectedCount, 5) / 5 * 100;
+  }
+
+  continue(): void {
+    const selectedInterests = this.interests
+      .filter((item) => item.selected)
+      .map((item) => item.name);
+
+    localStorage.setItem('fw_interests_seen', 'true');
+    localStorage.setItem('fw_selected_interests', JSON.stringify(selectedInterests));
+    this.router.navigateByUrl('/guest');
+  }
+
+  private loadInterests(): void {
+    this.http.get<InterestApiResponse>(`${environment.apiUrl}/interest`).subscribe({
+      next: (response) => {
+        const apiInterests = Array.isArray(response?.interests) ? response.interests : [];
+        this.interests = apiInterests.length > 0 ? apiInterests : this.getFallbackInterests();
+      },
+      error: (error) => {
+        console.error('Failed to load interests', error);
+        this.interests = this.getFallbackInterests();
+      }
+    });
+  }
+
+  private getFallbackInterests(): Interest[] {
+    return [
       { name: 'Graphic Design', icon: 'brush', selected: true },
       { name: 'Web Dev', icon: 'code', selected: false },
       { name: 'AI Models', icon: 'psychology', selected: true },
@@ -34,19 +81,5 @@ export class InterestStartPage implements OnInit {
       { name: '3D Design', icon: 'view_in_ar', selected: false },
       { name: 'Music Prod', icon: 'library_music', selected: false }
     ];
-  }
-
-  toggleInterest(item: { name: string; icon: string; selected: boolean }): void {
-    item.selected = !item.selected;
-  }
-
-  get progressPercent(): number {
-    const selectedCount = this.interests.filter((item) => item.selected).length;
-    return Math.min(selectedCount, 5) / 5 * 100;
-  }
-
-  continue(): void {
-    localStorage.setItem('fw_interests_seen', 'true');
-    this.router.navigateByUrl('/guest');
   }
 }

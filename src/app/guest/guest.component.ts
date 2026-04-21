@@ -1,9 +1,12 @@
-import { Component, inject } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
 import { IonicModule } from '@ionic/angular';
 import { MarketProduct, MarketProductCardComponent } from '../components/market-product-card/market-product-card.component';
 import { MarketProductInfoComponent } from '../components/market-product-info/market-product-info.component';
 import { Router } from '@angular/router';
+
+import { environment } from '../../environments/environment';
 
 interface GuestOffer {
   title: string;
@@ -12,6 +15,8 @@ interface GuestOffer {
   tags?: string[];
   avatar?: string;
   extraPeople?: string;
+  image?: string;
+  alt?: string;
   kind: 'service' | 'product';
 }
 
@@ -22,6 +27,38 @@ interface SettingsItem {
   hint?: string;
 }
 
+interface InterestProjectApiResponse {
+  id?: string;
+  type?: string;
+  time?: string;
+  badgeClass?: string;
+  title?: string;
+  description?: string;
+  label?: string;
+  amount?: string;
+  deadline?: string;
+  briefFileName?: string;
+  category?: string;
+  projectType?: string;
+}
+
+interface InterestProductApiResponse {
+  id?: string;
+  title?: string;
+  studio?: string;
+  price?: string;
+  image?: string;
+  alt?: string;
+  category?: string;
+  description?: string;
+  includes?: string[];
+}
+
+interface InterestFeedApiResponse {
+  projects?: InterestProjectApiResponse[];
+  products?: InterestProductApiResponse[];
+}
+
 @Component({
   selector: 'app-guest',
   templateUrl: './guest.component.html',
@@ -29,8 +66,9 @@ interface SettingsItem {
   standalone: true,
   imports: [CommonModule, IonicModule, MarketProductCardComponent, MarketProductInfoComponent],
 })
-export class GuestComponent {
+export class GuestComponent implements OnInit {
   private readonly router = inject(Router);
+  private readonly http = inject(HttpClient);
 
   isDarkMode = document.documentElement.classList.contains('dark');
   isProductInfoOpen = false;
@@ -47,55 +85,12 @@ export class GuestComponent {
     { icon: 'info', label: 'About Free Work', action: 'login', hint: 'Login required' },
   ];
 
-  readonly trendingOffers: GuestOffer[] = [
-    {
-      title: 'Mobile App UI Redesign for FinTech Startup',
-      budget: '$2,500 - $4,000',
-      duration: '2 weeks',
-      avatar:
-        'https://lh3.googleusercontent.com/aida-public/AB6AXuD-2yQItolQsNZstw2hn_rT8iTxOZxFMULlZrESx2FBSjzGZ0M7Mm3WW0jj76_xVPasDetFA_pOxUUEgiWTxg9kroIFv5RDtuaPY4p-hxvoBzn8bK2wTkCek1uPSKGTYZe9_svcEaBCQQuPYLKr-8yUpTicLvxXHXyKqlbFjVKxJzy59Cm_nGW1eQjUG4hTHz4mC_CstEs-EHOCEQuthZnSX9ViUg-T6OvlJ2QJjJUQ3I1UJ87PNUA2iVhpDKTopBHJiGPWOm-jrkym',
-      extraPeople: '+12',
-      kind: 'service',
-    },
-    {
-      title: 'SaaS Dashboard UI Kit (Premium)',
-      budget: '$49.00',
-      duration: 'Digital Product',
-      kind: 'product',
-    },
-    {
-      title: 'React Native Developer for E-commerce',
-      budget: '$80 - $120/hr',
-      duration: 'Contract',
-      tags: ['React', 'Typescript'],
-      kind: 'service',
-    },
-  ];
+  trendingOffers: GuestOffer[] = [];
+  featuredAssets: MarketProduct[] = [];
 
-  readonly featuredAssets: MarketProduct[] = [
-    {
-      title: 'SaaS Dashboard UI Kit (Premium)',
-      studio: 'PIXEL FORGE',
-      price: '$49.00',
-      category: 'Digital Product',
-      description: 'A polished dashboard kit with analytics, CRM, auth, and billing screens.',
-      includes: ['Figma source', '120+ screens', 'Design system'],
-      image:
-        'https://lh3.googleusercontent.com/aida-public/AB6AXuCWjucgX1U8wZpeuO1l8KI9K1jhSxKabyVh0_7s2zWGKtJGFFiJakdLXynMUD0EifXpLOG-9Yd2gJvt4ptxUW53wNZomg5XWLv8EieVMhvqahOw4z6keY8EZOE1hpUpHW9Mzd4PM1uvya4F4VkdHP-TaZc8XKYNqIWf8K14vy13NTd8i6LJVAvz-wpjcF--aEzqvsZodJsLnxvZTqkJaX6R02_zuCxT5_eP6gkuOtsRy9Ew_k_cdrlQ5rpbiew9RGOJ7BDsVq3AIPqV',
-      alt: 'SaaS dashboard UI kit preview',
-    },
-    {
-      title: 'Growth Marketing Templates',
-      studio: 'BRANDLAB',
-      price: '$29.00',
-      category: 'Templates',
-      description: 'Campaign templates for ads, landing pages, and social growth experiments.',
-      includes: ['Editable files', 'Ad concepts', 'Funnel checklist'],
-      image:
-        'https://lh3.googleusercontent.com/aida-public/AB6AXuDtU4_vmAtP94ImtXyt3prK4Qm8lpWzvhRDU0_PS7ZW_-bmUtbdxuLWRmFSzbFUd_VCWS1RPpDKQ7tcFNmTPC4_PW3jnixN_ahV3R_gtZVcIxh5l0xjP0x0Bn3G5VHRbgF9bq8IiHCkKuw7_YrpBC7moFqjFzeDc7rFjSTExUdjCDZP5LBeL27kNvPqrBgEKjNDWEy3HUGmgt44B3YbHYY2SN2HVQ8NmJC5BzxsNhcozjpXF0ZhELA-CkqWbS-AU_SrmJM-4kiupYu7',
-      alt: 'Marketing template preview',
-    },
-  ];
+  ngOnInit(): void {
+    this.loadTrendingFeed();
+  }
 
   goToLogin(): void {
     void this.router.navigateByUrl('/login');
@@ -145,5 +140,46 @@ export class GuestComponent {
   scrollTo(sectionId: string): void {
     this.supportMessage = '';
     document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  private loadTrendingFeed(): void {
+    this.http.get<InterestFeedApiResponse>(`${environment.apiUrl}/interest`).subscribe({
+      next: (response) => {
+        const projects = Array.isArray(response?.projects) ? response.projects : [];
+        const products = Array.isArray(response?.products) ? response.products : [];
+
+        const serviceOffers: GuestOffer[] = projects.slice(0, 3).map((project) => ({
+          title: project.title || 'Untitled project',
+          budget: project.amount || 'Budget not specified',
+          duration: project.deadline || 'Deadline flexible',
+          tags: this.buildProjectTags(project),
+          kind: 'service',
+        }));
+
+        this.trendingOffers = serviceOffers;
+        this.featuredAssets = products.slice(0, 2).map((product) => ({
+          title: product.title || 'Untitled product',
+          studio: product.studio || 'MARKETPLACE',
+          price: product.price || '',
+          image: product.image || '',
+          alt: product.alt || `${product.title || 'Marketplace'} preview`,
+          category: product.category || 'Digital Product',
+          description: product.description || '',
+          includes: Array.isArray(product.includes) ? product.includes : [],
+        }));
+      },
+      error: (error) => {
+        console.error('Failed to load guest trending feed', error);
+        this.trendingOffers = [];
+        this.featuredAssets = [];
+      }
+    });
+  }
+
+  private buildProjectTags(project: InterestProjectApiResponse): string[] {
+    return [project.category, project.type]
+      .map((value) => String(value || '').trim())
+      .filter((value, index, array) => value.length > 0 && array.indexOf(value) === index)
+      .slice(0, 2);
   }
 }

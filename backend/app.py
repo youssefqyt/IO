@@ -15,6 +15,7 @@ from Myjob import get_active_myjobs, update_myjob_workflow_status, deliver_myjob
 from Pay import pay_product, release_myjob_payment
 from Sprint import create_sprint, get_sprints_for_proposal, get_sprints_by_filters, pay_sprint
 from rate import create_or_update_rate, get_reviews
+from interest import get_interest_data
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = SECRET_KEY
@@ -178,6 +179,11 @@ def dashboard_stats_route():
 def compte_requests_route():
     from Admin import get_compte_requests
     return get_compte_requests(db)
+
+
+@app.route('/api/interest', methods=['GET'])
+def get_interest_data_route():
+    return get_interest_data(db)
 
 
 if __name__ == '__main__':

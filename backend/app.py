@@ -14,6 +14,7 @@ from SubmitProposal import submit_proposal, get_send_proposals, update_send_prop
 from Myjob import get_active_myjobs, update_myjob_workflow_status, deliver_myjob_assets, mark_delivery_viewed
 from Pay import pay_product, release_myjob_payment
 from Sprint import create_sprint, get_sprints_for_proposal, get_sprints_by_filters, pay_sprint
+from rate import create_or_update_rate, get_reviews
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = SECRET_KEY
@@ -155,6 +156,16 @@ def complete_project_route(proposal_id):
 def get_project_history_route():
     from ProjectHistory import get_project_history
     return get_project_history(db)
+
+
+@app.route('/api/rate', methods=['POST'])
+def create_or_update_rate_route():
+    return create_or_update_rate(db)
+
+
+@app.route('/api/rates', methods=['GET'])
+def get_reviews_route():
+    return get_reviews(db)
 
 
 @app.route('/api/admin/dashboard-stats', methods=['GET'])

@@ -1000,6 +1000,8 @@ export class MyjobComponent implements OnInit {
       id: record.id,
       proposalId: record.proposalId,
       projectId: record.projectId,
+      clientId: record.clientId,
+      freelancerId: record.freelancerId,
       title: record.projectTitle,
       orderId: record.projectId || record.proposalId,
       timeLabel: record.acceptedAtLabel,

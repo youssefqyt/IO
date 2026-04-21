@@ -4,8 +4,11 @@ import { IonicModule } from '@ionic/angular';
 import { Location } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
 
 interface ProfileData {
+  id?: string;
   fullName: string;
   email: string;
   role: 'freelancer' | 'client';
@@ -16,6 +19,32 @@ interface ProfileData {
   cvFileData?: string;
 }
 
+interface FreelancerReview {
+  id: string;
+  proposalId: string;
+  projectId: string;
+  projectTitle: string;
+  clientId: string;
+  freelancerId: string;
+  professionalismRating: number;
+  qualityOfCodeRating: number;
+  overallRating: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+interface ReviewsSummary {
+  totalReviews: number;
+  averageProfessionalism: number;
+  averageQualityOfCode: number;
+  averageOverallRating: number;
+}
+
+interface ReviewsResponse {
+  summary: ReviewsSummary;
+  reviews: FreelancerReview[];
+}
+
 @Component({
   selector: 'app-profile',
   templateUrl: './profile.component.html',
@@ -24,8 +53,20 @@ interface ProfileData {
   imports: [CommonModule, IonicModule, RouterModule]
 })
 export class ProfileComponent implements OnInit {
+  readonly apiUrl = environment.apiUrl;
+
   showCvPreview = false;
   safeCvUrl: SafeResourceUrl | null = null;
+  reviews: FreelancerReview[] = [];
+  reviewsSummary: ReviewsSummary = {
+    totalReviews: 0,
+    averageProfessionalism: 0,
+    averageQualityOfCode: 0,
+    averageOverallRating: 0
+  };
+  isLoadingReviews = false;
+  reviewsError = '';
+  showAllReviews = false;
   profile: ProfileData = {
     fullName: 'Alex Sterling',
     email: 'alex.sterling@design.co',
@@ -39,15 +80,18 @@ export class ProfileComponent implements OnInit {
 
   constructor(
     private readonly location: Location,
-    private readonly sanitizer: DomSanitizer
+    private readonly sanitizer: DomSanitizer,
+    private readonly http: HttpClient
   ) {}
 
   ngOnInit(): void {
     this.loadProfile();
+    this.loadReviews();
   }
 
   ionViewWillEnter(): void {
     this.loadProfile();
+    this.loadReviews();
   }
 
   private loadProfile(): void {
@@ -57,6 +101,7 @@ export class ProfileComponent implements OnInit {
     try {
       const parsed = JSON.parse(raw) as Partial<ProfileData>;
       this.profile = {
+        id: parsed.id || this.profile.id,
         fullName: parsed.fullName || this.profile.fullName,
         email: parsed.email || this.profile.email,
         role: parsed.role === 'client' ? 'client' : 'freelancer',
@@ -70,6 +115,63 @@ export class ProfileComponent implements OnInit {
       };
     } catch {
     }
+  }
+
+  private loadReviews(): void {
+    this.reviewsError = '';
+
+    if (!this.profile?.id || this.profile.role !== 'freelancer') {
+      this.reviews = [];
+      this.reviewsSummary = {
+        totalReviews: 0,
+        averageProfessionalism: 0,
+        averageQualityOfCode: 0,
+        averageOverallRating: 0
+      };
+      return;
+    }
+
+    this.isLoadingReviews = true;
+    this.http.get<ReviewsResponse>(`${this.apiUrl}/rates`, {
+      params: {
+        freelancerId: this.profile.id
+      }
+    }).subscribe({
+      next: (response) => {
+        this.isLoadingReviews = false;
+        this.reviews = Array.isArray(response?.reviews) ? response.reviews : [];
+        this.reviewsSummary = response?.summary || {
+          totalReviews: 0,
+          averageProfessionalism: 0,
+          averageQualityOfCode: 0,
+          averageOverallRating: 0
+        };
+      },
+      error: () => {
+        this.isLoadingReviews = false;
+        this.reviews = [];
+        this.reviewsSummary = {
+          totalReviews: 0,
+          averageProfessionalism: 0,
+          averageQualityOfCode: 0,
+          averageOverallRating: 0
+        };
+        this.reviewsError = 'Unable to load reviews right now.';
+      }
+    });
+  }
+
+  get displayedReviews(): FreelancerReview[] {
+    return this.showAllReviews ? this.reviews : this.reviews.slice(0, 3);
+  }
+
+  toggleShowAllReviews(): void {
+    this.showAllReviews = !this.showAllReviews;
+  }
+
+  getStars(value: number): number[] {
+    const rounded = Math.round(value || 0);
+    return [1, 2, 3, 4, 5].map((star) => (star <= rounded ? 1 : 0));
   }
 
   openCvPreview(): void {

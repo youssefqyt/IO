@@ -26,6 +26,12 @@ interface BrowseProjectSummary {
   amount: string;
   deadline: string;
   category?: string;
+  postedBy?: {
+    id?: string;
+    role?: 'freelancer' | 'client';
+    name?: string;
+    email?: string;
+  };
 }
 
 interface RecentProjectCard {
@@ -42,6 +48,9 @@ interface ActiveMyjobSummary {
   acceptedAtLabel?: string;
   lastCommunicationAtLabel?: string;
   client?: {
+    name?: string;
+  };
+  freelancer?: {
     name?: string;
   };
 }
@@ -167,7 +176,7 @@ export class HomePage implements OnInit {
   }
 
   private loadRecentProjects(): void {
-    if (this.profile.role !== 'freelancer') {
+    if (!this.profile.id) {
       this.recentProjects = [];
       return;
     }
@@ -178,7 +187,15 @@ export class HomePage implements OnInit {
     this.http.get<BrowseProjectSummary[]>(`${environment.apiUrl}/projects`).subscribe({
       next: (projects) => {
         this.isLoadingRecentProjects = false;
-        this.recentProjects = (Array.isArray(projects) ? projects : []).slice(0, 6).map((project) => ({
+
+        const projectList = Array.isArray(projects) ? projects : [];
+        const visibleProjects = this.profile.role === 'client'
+          ? projectList.filter((project) =>
+              project.postedBy?.id === this.profile.id && project.postedBy?.role === 'client'
+            )
+          : projectList;
+
+        this.recentProjects = visibleProjects.slice(0, 6).map((project) => ({
           title: project.title || 'Untitled Project',
           price: project.amount || '$0',
           description: project.description || 'No description provided.',
@@ -196,7 +213,7 @@ export class HomePage implements OnInit {
   }
 
   private loadActiveProjects(): void {
-    if (!this.profile.id || this.profile.role !== 'freelancer') {
+    if (!this.profile.id || !this.profile.role) {
       this.activeGigs = [];
       return;
     }
@@ -211,7 +228,9 @@ export class HomePage implements OnInit {
         this.isLoadingActiveGigs = false;
         this.activeGigs = (Array.isArray(projects) ? projects : []).slice(0, 6).map((project) => ({
           title: project.projectTitle || 'Untitled Project',
-          company: project.client?.name || 'Client Project',
+          company: this.profile.role === 'client'
+            ? (project.freelancer?.name || 'Freelancer Project')
+            : (project.client?.name || 'Client Project'),
           due: this.mapActiveProjectBadge(project),
           progress: this.mapWorkflowProgress(project.workflowStatus),
           colorClass: project.workflowStatus === 'completed' ? 'secondary' : 'primary'

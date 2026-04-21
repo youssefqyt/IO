@@ -382,7 +382,7 @@
         <div class="flex items-center justify-between gap-3">
           <h2 class="text-xs font-bold uppercase tracking-widest text-slate-400">Project Sprints</h2>
           <span class="rounded-full bg-slate-100 dark:bg-slate-800 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-500">
-            {{ (selectedProject?.sprints?.length || 0) }} Sprint{{ (selectedProject?.sprints?.length || 0) > 1 ? 's' : '' }}
+            {{ selectedProject.sprints?.length || 0 }} Sprint{{ (selectedProject.sprints?.length || 0) > 1 ? 's' : '' }}
           </span>
         </div>
 
@@ -522,6 +522,8 @@
             type="file"
             multiple
             accept=".zip,.fig,.pdf,.png,.jpg,.jpeg"
+            aria-label="Upload project delivery files"
+            title="Upload project delivery files"
             class="hidden"
             (change)="onDeliveryFilesSelected($event)"
           />
@@ -623,6 +625,8 @@
         <button
           type="button"
           (click)="closePaymentModal()"
+          aria-label="Close payment modal"
+          title="Close payment modal"
           class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-200"
         >
           <span class="material-symbols-outlined">close</span>
@@ -701,6 +705,97 @@
           class="flex-1 rounded-2xl bg-blue-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-blue-600/20 disabled:opacity-60"
         >
           {{ isProcessingPayment ? 'Processing...' : 'Pay Now' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="showRatingModal" class="fixed inset-0 z-[79] flex items-center justify-center bg-slate-950/70 p-4" (click)="closeRatingModal()">
+    <div class="w-full max-w-sm rounded-3xl bg-white dark:bg-slate-800 p-6 shadow-2xl" (click)="$event.stopPropagation()">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <p class="text-[11px] font-bold uppercase tracking-widest text-slate-400">Freelancer Review</p>
+          <h2 class="mt-1 text-xl font-bold text-slate-900 dark:text-white">Rate this project</h2>
+          <p class="mt-1 text-sm text-slate-500">
+            {{ reviewProject?.projectTitle || selectedProject?.title || 'Completed project' }}
+          </p>
+        </div>
+        <button
+          type="button"
+          (click)="closeRatingModal()"
+          aria-label="Close review modal"
+          title="Close review modal"
+          class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-200"
+        >
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <div *ngIf="reviewError" class="mt-4 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">
+        {{ reviewError }}
+      </div>
+
+      <div *ngIf="reviewSuccessMessage" class="mt-4 rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
+        {{ reviewSuccessMessage }}
+      </div>
+
+      <div class="mt-5 space-y-5">
+        <div class="rounded-2xl bg-slate-50 dark:bg-slate-900/40 px-4 py-4">
+          <p class="text-[11px] font-bold uppercase tracking-widest text-slate-400">Professionalism</p>
+          <div class="mt-3 flex items-center gap-2">
+            <button
+              *ngFor="let state of getReviewStars(reviewProfessionalism); let i = index"
+              type="button"
+              (click)="setReviewProfessionalism(i + 1)"
+              [attr.aria-label]="'Rate professionalism ' + (i + 1) + ' stars'"
+              [attr.title]="'Rate professionalism ' + (i + 1) + ' stars'"
+              class="flex h-11 w-11 items-center justify-center rounded-2xl border transition-colors"
+              [ngClass]="i < reviewProfessionalism ? 'border-amber-200 bg-amber-50 text-amber-500' : 'border-slate-200 bg-white text-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-500'"
+            >
+              <span class="material-symbols-outlined" [style.font-variation-settings]="i < reviewProfessionalism ? '\'FILL\' 1' : '\'FILL\' 0'">star</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="rounded-2xl bg-slate-50 dark:bg-slate-900/40 px-4 py-4">
+          <p class="text-[11px] font-bold uppercase tracking-widest text-slate-400">Quality of Code</p>
+          <div class="mt-3 flex items-center gap-2">
+            <button
+              *ngFor="let state of getReviewStars(reviewQualityOfCode); let i = index"
+              type="button"
+              (click)="setReviewQualityOfCode(i + 1)"
+              [attr.aria-label]="'Rate quality of code ' + (i + 1) + ' stars'"
+              [attr.title]="'Rate quality of code ' + (i + 1) + ' stars'"
+              class="flex h-11 w-11 items-center justify-center rounded-2xl border transition-colors"
+              [ngClass]="i < reviewQualityOfCode ? 'border-amber-200 bg-amber-50 text-amber-500' : 'border-slate-200 bg-white text-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-500'"
+            >
+              <span class="material-symbols-outlined" [style.font-variation-settings]="i < reviewQualityOfCode ? '\'FILL\' 1' : '\'FILL\' 0'">star</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="rounded-2xl bg-blue-50 dark:bg-blue-900/20 px-4 py-4">
+          <p class="text-[11px] font-bold uppercase tracking-widest text-blue-600 dark:text-blue-300">Overall Score</p>
+          <p class="mt-1 text-2xl font-extrabold text-slate-900 dark:text-white">{{ ((reviewProfessionalism + reviewQualityOfCode) / 2).toFixed(1) }}/5</p>
+        </div>
+      </div>
+
+      <div class="mt-6 flex gap-3">
+        <button
+          type="button"
+          (click)="closeRatingModal()"
+          [disabled]="isSubmittingReview"
+          class="flex-1 rounded-2xl border border-slate-200 dark:border-slate-600 px-4 py-3 text-sm font-bold text-slate-700 dark:text-slate-300 disabled:opacity-60"
+        >
+          Later
+        </button>
+        <button
+          type="button"
+          (click)="submitFreelancerReview()"
+          [disabled]="isSubmittingReview"
+          class="flex-1 rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-600/20 disabled:opacity-60"
+        >
+          {{ isSubmittingReview ? 'Saving...' : 'Submit Review' }}
         </button>
       </div>
     </div>

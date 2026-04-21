@@ -5,6 +5,7 @@ import { IonicModule } from '@ionic/angular';
 import { Router, RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
+import { categoriesData, Category } from '../../categories';
 
 interface StoredProfile {
   id?: string;
@@ -40,12 +41,7 @@ export class PostProjectComponent {
   submitError = '';
   isSubmitting = false;
 
-  readonly categories = [
-    { value: 'design', label: 'Graphic Design' },
-    { value: 'dev', label: 'Web Development' },
-    { value: 'writing', label: 'Content Writing' },
-    { value: 'marketing', label: 'Digital Marketing' },
-  ];
+  readonly categories = categoriesData.map((cat: Category) => ({ value: cat.name, label: cat.name }));
 
   readonly projectTypes = [
     { value: 'project', label: 'Project' },

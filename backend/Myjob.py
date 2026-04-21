@@ -288,33 +288,23 @@ def create_myjob_client_record(db, proposal, now=None):
     _upsert_myjob(db, "MyJobClient", proposal, now)
 
 
-def _normalize_myjob_response(document, role, db):
-    proposal_id = document.get("proposalId", "")
-    # Build sprints from MyJobCommunication delivery records
-    sprints = []
-    sprint_number_to_sprint_id = {}
-    # Pre-fetch all Sprint documents for this proposal to map sprintNumber -> sprintId
-    for sprint_doc in db["Sprint"].find({"proposalId": proposal_id}).sort("sprintNumber", 1):
-        sn = _safe_int(sprint_doc.get("sprintNumber"), 0)
-        if sn > 0:
-            sprint_number_to_sprint_id[sn] = str(sprint_doc.get("_id"))
-    for comm in db["MyJobCommunication"].find({"proposalId": proposal_id, "eventType": "delivery"}).sort("deliverySequence", 1):
-        sn = comm.get("deliverySequence", 0)
-        sprint_entry = {
-            "id": str(comm.get("_id")),
-            "sprintId": sprint_number_to_sprint_id.get(sn, ""),  # Link to Sprint collection ID
-            "sprintNumber": sn,
-            "title": f"Sprint {sn}",
-            "description": "",
-            "status": "paid" if comm.get("approvedAmount", 0) > 0 else "unpaid",
-            "price": _safe_float(comm.get("requestedAmount"), 0),
-            "deliveryMessage": comm.get("message", ""),
-            "deliveryFiles": _serialize_file_summaries(comm.get("files", [])),
-            "submittedAtLabel": _format_relative_time(comm.get("createdAt")),
-            "paidAtLabel": _format_relative_time(comm.get("paidAt") or comm.get("createdAt")) if comm.get("approvedAmount", 0) > 0 else None,
-            "canAccessFiles": (comm.get("approvedAmount", 0) > 0) or role == "freelancer",
+def _normalize_myjob_response(document, role):
+    sprints = [
+        {
+            "sprintId": s.get("sprintId", ""),
+            "sprintNumber": s.get("sprintNumber", 1),
+            "title": s.get("title", ""),
+            "description": s.get("description", ""),
+            "status": _normalize_sprint_status(s.get("status")),
+            "price": _safe_float(s.get("price"), 0),
+            "deliveryMessage": s.get("deliveryMessage", ""),
+            "deliveryFiles": _serialize_file_summaries(s.get("deliveryFiles", [])),
+            "submittedAtLabel": _format_relative_time(s.get("submittedAt")),
+            "paidAtLabel": _format_relative_time(s.get("paidAt")),
+            "canAccessFiles": s.get("status") == "paid" or role == "freelancer",
         }
-        sprints.append(sprint_entry)
+        for s in document.get("sprints", [])
+    ]
     return {
         "id": str(document.get("_id")),
         "proposalId": document.get("proposalId", ""),
@@ -367,20 +357,7 @@ def get_active_myjobs(db):
         return jsonify({"errors": {"role": "Role must be client or freelancer"}}), 400
     user_field = "clientId" if role == "client" else "freelancerId"
     docs = db[_authorized_job_collection(role)].find({"status": "active", user_field: user_id}).sort("acceptedAt", -1)
-    return jsonify([_normalize_myjob_response(doc, role, db) for doc in docs]), 200
-
-
-def get_myjob_detail(db, proposal_id):
-    user_id = (request.args.get("userId") or "").strip()
-    role = (request.args.get("role") or "").strip().lower()
-    if not user_id:
-        return jsonify({"errors": {"userId": "User id is required"}}), 400
-    if role not in {"client", "freelancer"}:
-        return jsonify({"errors": {"role": "Role must be client or freelancer"}}), 400
-    doc = db[_authorized_job_collection(role)].find_one({"proposalId": proposal_id, "status": "active"})
-    if not doc:
-        return jsonify({"errors": {"proposalId": "Active task not found"}}), 404
-    return jsonify(_normalize_myjob_response(doc, role, db)), 200
+    return jsonify([_normalize_myjob_response(doc, role) for doc in docs]), 200
 
 
 def get_myjob_communications(db, proposal_id):
@@ -496,29 +473,6 @@ def deliver_myjob_assets(db, proposal_id):
         "paymentStatus": "unpaid",
         "updatedAt": now,
     })
-
-    # Ensure a corresponding Sprint document exists for this sprint
-    sprint_number = target_sprint.get("sprintNumber")
-    sprint_doc = {
-        "proposalId": proposal_id,
-        "projectId": existing_job.get("projectId", ""),
-        "clientId": existing_job.get("clientId", ""),
-        "freelancerId": existing_job.get("freelancerId", ""),
-        "sprintNumber": sprint_number,
-        "price": requested_amount,
-        "paymentStatus": "unpaid",
-        "deliveryMessage": delivery_message,
-        "deliveryFiles": delivery_files,
-        "deliveredAt": now,
-        "paidAt": None,
-        "createdAt": now,
-        "updatedAt": now,
-    }
-    db["Sprint"].update_one(
-        {"proposalId": proposal_id, "sprintNumber": sprint_number},
-        {"$set": sprint_doc},
-        upsert=True
-    )
 
     _sync_job_update(db, proposal_id, {
         "sprints": sprints,

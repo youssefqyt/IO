@@ -378,29 +378,14 @@ def get_freelancer_earnings_summary(db):
 
     for document in db["EarningFreelancer"].find({"freelancerId": user_id}):
         project_count += 1
-        document_total = 0.0
-        payments = document.get("payments", [])
+        total_earned += _safe_float(document.get("totalEarned"), 0)
 
-        if isinstance(payments, list) and payments:
-            for payment in payments:
-                amount = _safe_float(payment.get("amount"), 0)
-                document_total += amount
-
-                paid_at = payment.get("paidAt")
-                if isinstance(paid_at, datetime):
-                    paid_at = paid_at if paid_at.tzinfo else paid_at.replace(tzinfo=timezone.utc)
-                    if paid_at.year == now.year and paid_at.month == now.month:
-                        current_month_earned += amount
-        else:
-            document_total = _safe_float(document.get("totalEarned"), 0)
-
-            last_paid_at = document.get("lastPaidAt")
-            if isinstance(last_paid_at, datetime):
-                last_paid_at = last_paid_at if last_paid_at.tzinfo else last_paid_at.replace(tzinfo=timezone.utc)
-                if last_paid_at.year == now.year and last_paid_at.month == now.month:
-                    current_month_earned += _safe_float(document.get("lastPaidAmount"), 0)
-
-        total_earned += document_total
+        for payment in document.get("payments", []):
+            paid_at = payment.get("paidAt")
+            if isinstance(paid_at, datetime):
+                paid_at = paid_at if paid_at.tzinfo else paid_at.replace(tzinfo=timezone.utc)
+                if paid_at.year == now.year and paid_at.month == now.month:
+                    current_month_earned += _safe_float(payment.get("amount"), 0)
 
     monthly_goal = 7000.0
     progress_percent = 0

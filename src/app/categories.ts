@@ -1,0 +1,22 @@
+export interface Category {
+  name: string;
+}
+
+export const categoriesData: Category[] = [
+  { "name": "Graphic Design" },
+  { "name": "Web Dev" },
+  { "name": "AI Models" },
+  { "name": "Marketing" },
+  { "name": "Video Editor" },
+  { "name": "Illustration" },
+  { "name": "Copywriting" },
+  { "name": "Photography" },
+  { "name": "Mobile Dev" },
+  { "name": "UI/UX" },
+  { "name": "Data Entry" },
+  { "name": "SEO" },
+  { "name": "Project Mgmt" },
+  { "name": "Translation" },
+  { "name": "3D Design" },
+  { "name": "Music Prod" }
+];

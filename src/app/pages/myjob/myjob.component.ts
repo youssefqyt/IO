@@ -137,6 +137,14 @@ interface DeliveryAssetsResponse {
   deliverySubmittedAtLabel?: string;
 }
 
+interface ReviewProjectContext {
+  proposalId?: string;
+  projectId?: string;
+  projectTitle?: string;
+  clientId?: string;
+  freelancerId?: string;
+}
+
 @Component({
   selector: 'app-myjob',
   templateUrl: './myjob.component.html',
@@ -199,12 +207,20 @@ export class MyjobComponent implements OnInit {
 
   showPaymentModal = false;
   paymentSprint: SprintRecord | null = null;
-  cardNumber = '';
-  expiryDate = '';
-  cvv = '';
-  isProcessingPayment = false;
   paymentError = '';
   paymentSuccessMessage = '';
+  cardNumber = '4242 4242 4242 4242';
+  expiryDate = '12/30';
+  cvv = '123';
+  isProcessingPayment = false;
+
+  showRatingModal = false;
+  reviewProject: ReviewProjectContext | null = null;
+  reviewError = '';
+  reviewSuccessMessage = '';
+  reviewProfessionalism = 5;
+  reviewQualityOfCode = 5;
+  isSubmittingReview = false;
 
   constructor(
     private readonly location: Location,
@@ -289,6 +305,16 @@ export class MyjobComponent implements OnInit {
       }
     ).subscribe({
       next: (response) => {
+        const completedProject = this.selectedProject
+          ? {
+              proposalId: this.selectedProject.proposalId,
+              projectId: this.selectedProject.projectId,
+              projectTitle: this.selectedProject.title,
+              clientId: this.selectedProject.clientId,
+              freelancerId: this.selectedProject.freelancerId
+            }
+          : null;
+
         this.isCompletingProject = false;
         this.completeProjectMessage = response.message || 'Project completed successfully.';
         this.closeCompleteProjectDialog();
@@ -296,6 +322,10 @@ export class MyjobComponent implements OnInit {
         this.loadActiveProjects();
         this.setActiveTab('history');
         this.loadProjectHistory();
+
+        if (this.isClient && completedProject?.freelancerId) {
+          this.openRatingModal(completedProject);
+        }
       },
       error: (error) => {
         this.isCompletingProject = false;
@@ -343,12 +373,10 @@ export class MyjobComponent implements OnInit {
       return;
     }
 
-    this.paymentSprint = sprint;
-    this.cardNumber = '';
-    this.expiryDate = '';
-    this.cvv = '';
+    this.selectedProjectError = '';
     this.paymentError = '';
     this.paymentSuccessMessage = '';
+    this.paymentSprint = sprint;
     this.showPaymentModal = true;
   }
 
@@ -378,85 +406,147 @@ export class MyjobComponent implements OnInit {
   }
 
   closePaymentModal(): void {
-    this.showPaymentModal = false;
-    this.paymentSprint = null;
-    this.cardNumber = '';
-    this.expiryDate = '';
-    this.cvv = '';
-    this.paymentError = '';
-    this.paymentSuccessMessage = '';
-    this.isProcessingPayment = false;
-  }
-
-  submitPayment(): void {
-    if (!this.paymentSprint || !this.selectedProject || !this.profile?.id) {
-      this.paymentError = 'Payment information is missing';
+    if (this.isProcessingPayment) {
       return;
     }
 
-    if (!this.cardNumber || !this.expiryDate || !this.cvv) {
-      this.paymentError = 'Please fill in all card details';
+    this.showPaymentModal = false;
+    this.paymentSprint = null;
+    this.paymentError = '';
+    this.paymentSuccessMessage = '';
+  }
+
+  submitPayment(): void {
+    if (!this.profile?.id || this.profile.role !== 'client') {
+      this.paymentError = 'Only clients can pay for sprint deliveries.';
+      return;
+    }
+
+    if (!this.paymentSprint) {
+      this.paymentError = 'Please select a sprint to pay for.';
+      return;
+    }
+
+    const normalizedCardNumber = this.cardNumber.replace(/\s+/g, '');
+    if (!normalizedCardNumber || !this.expiryDate.trim() || !this.cvv.trim()) {
+      this.paymentError = 'Card number, expiry date, and CVV are required.';
       return;
     }
 
     this.isProcessingPayment = true;
     this.paymentError = '';
+    this.paymentSuccessMessage = '';
+    this.selectedProjectError = '';
 
-    this.http.post<{ 
-      message: string; 
-      paymentStatus: string; 
-      workflowStatus: string; 
-      totalPaidAmount: number; 
-      remainingBudgetAmount: number 
-    }>(
-      `${this.apiUrl}/sprints/${this.paymentSprint.sprintId}/pay`,
+    const sprint = this.paymentSprint;
+
+    this.http.post<{ message: string; paymentStatus: string; workflowStatus: string; totalPaidAmount: number; remainingBudgetAmount: number }>(
+      `${this.apiUrl}/sprints/${sprint.sprintId}/pay`,
       {
         userId: this.profile.id,
         role: this.profile.role,
-        amount: this.paymentSprint.price,
-        cardNumber: this.cardNumber,
-        expiryDate: this.expiryDate,
-        cvv: this.cvv
+        amount: sprint.price,
+        cardNumber: normalizedCardNumber,
+        expiryDate: this.expiryDate.trim(),
+        cvv: this.cvv.trim()
       }
     ).subscribe({
       next: (response) => {
         this.isProcessingPayment = false;
+        this.isUpdatingProjectStatus = false;
         this.paymentSuccessMessage = response.message || 'Sprint payment completed successfully.';
-        
-        // Update sprint status to paid
+        this.statusUpdateMessage = this.paymentSuccessMessage;
+
         if (this.selectedProject?.sprints) {
           this.selectedProject.sprints = this.selectedProject.sprints.map((item) => (
-            item.sprintId === this.paymentSprint?.sprintId 
-              ? { 
-                  ...item, 
-                  status: 'paid', 
-                  paidAtLabel: 'Just now', 
-                  canAccessFiles: true, 
-                  submittedAt: item.submittedAt || 'now' 
-                } 
-              : item
+            item.sprintId === sprint.sprintId ? { ...item, status: 'paid', paidAtLabel: 'Just now', canAccessFiles: true, submittedAt: item.submittedAt || 'now' } : item
           ));
           this.selectedProject.hasUnpaidSubmittedSprints = this.hasUnpaidSubmittedSprints(this.selectedProject.sprints);
         }
 
-        // Reload data
         this.loadActiveProjects();
         if (this.selectedProject) {
           this.loadProjectSprints(this.selectedProject);
         }
-
-        // Close modal after success
-        setTimeout(() => {
-          this.closePaymentModal();
-        }, 1500);
       },
       error: (error) => {
         this.isProcessingPayment = false;
-        this.paymentError = error?.error?.errors 
-          ? Object.values(error.error.errors).join(' ')
-          : error?.error?.message 
-          ? error.error.message
-          : 'Unable to process payment. Please check your card details and try again.';
+        this.isUpdatingProjectStatus = false;
+        this.paymentError = this.getErrorMessage(error, 'Unable to process sprint payment right now.');
+      }
+    });
+  }
+
+  openRatingModal(project: ReviewProjectContext): void {
+    this.reviewProject = project;
+    this.reviewProfessionalism = 5;
+    this.reviewQualityOfCode = 5;
+    this.reviewError = '';
+    this.reviewSuccessMessage = '';
+    this.isSubmittingReview = false;
+    this.showRatingModal = true;
+  }
+
+  closeRatingModal(): void {
+    if (this.isSubmittingReview) {
+      return;
+    }
+
+    this.showRatingModal = false;
+    this.reviewProject = null;
+    this.reviewError = '';
+    this.reviewSuccessMessage = '';
+  }
+
+  getReviewStars(_rating: number): number[] {
+    return [1, 2, 3, 4, 5];
+  }
+
+  setReviewProfessionalism(rating: number): void {
+    this.reviewProfessionalism = rating;
+    this.reviewError = '';
+    this.reviewSuccessMessage = '';
+  }
+
+  setReviewQualityOfCode(rating: number): void {
+    this.reviewQualityOfCode = rating;
+    this.reviewError = '';
+    this.reviewSuccessMessage = '';
+  }
+
+  submitFreelancerReview(): void {
+    if (!this.profile?.id || this.profile.role !== 'client') {
+      this.reviewError = 'Only clients can submit freelancer reviews.';
+      return;
+    }
+
+    if (!this.reviewProject?.freelancerId || (!this.reviewProject.proposalId && !this.reviewProject.projectId)) {
+      this.reviewError = 'Missing project details for this review.';
+      return;
+    }
+
+    this.isSubmittingReview = true;
+    this.reviewError = '';
+    this.reviewSuccessMessage = '';
+
+    this.http.post<{ message: string }>(`${this.apiUrl}/rate`, {
+      userId: this.profile.id,
+      role: this.profile.role,
+      proposalId: this.reviewProject.proposalId || '',
+      projectId: this.reviewProject.projectId || '',
+      projectTitle: this.reviewProject.projectTitle || '',
+      clientId: this.reviewProject.clientId || this.profile.id,
+      freelancerId: this.reviewProject.freelancerId,
+      professionalismRating: this.reviewProfessionalism,
+      qualityOfCodeRating: this.reviewQualityOfCode
+    }).subscribe({
+      next: (response) => {
+        this.isSubmittingReview = false;
+        this.reviewSuccessMessage = response.message || 'Freelancer review saved successfully.';
+      },
+      error: (error) => {
+        this.isSubmittingReview = false;
+        this.reviewError = this.getErrorMessage(error, 'Unable to save your review right now.');
       }
     });
   }

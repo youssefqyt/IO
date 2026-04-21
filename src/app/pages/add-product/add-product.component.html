@@ -32,15 +32,16 @@
 
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">Category</label>
+            <label for="productCategory" class="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">Category</label>
             <select
+              id="productCategory"
               [(ngModel)]="productCategory"
               name="productCategory"
+              aria-label="Product category"
+              title="Product category"
               class="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 focus:border-primary focus:bg-white focus:outline-none"
             >
-              <option value="Templates">Templates</option>
-              <option value="Icons">Icons</option>
-              <option value="3D">3D</option>
+              <option *ngFor="let category of productCategories" [value]="category">{{ category }}</option>
             </select>
           </div>
           <div>

@@ -5,6 +5,7 @@ import { HttpClient } from '@angular/common/http';
 import { IonicModule } from '@ionic/angular';
 import { RouterModule } from '@angular/router';
 import { environment } from '../../../environments/environment';
+import { categoriesData, Category } from '../../categories';
 
 interface StoredProfile {
   id?: string;
@@ -20,8 +21,10 @@ interface StoredProfile {
   imports: [CommonModule, FormsModule, IonicModule, RouterModule]
 })
 export class AddProductComponent {
+  readonly productCategories = categoriesData.map((category: Category) => category.name);
+
   productTitle = '';
-  productCategory = 'Templates';
+  productCategory = this.productCategories[0] || '';
   productPrice: number | null = null;
   productDescription = '';
   productIncludes = '';
@@ -116,7 +119,7 @@ export class AddProductComponent {
 
   private resetProductForm(): void {
     this.productTitle = '';
-    this.productCategory = 'Templates';
+    this.productCategory = this.productCategories[0] || '';
     this.productPrice = null;
     this.productDescription = '';
     this.productIncludes = '';

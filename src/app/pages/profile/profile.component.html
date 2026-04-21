@@ -38,37 +38,112 @@
           </div>
           <div>
             <div class="score-line">
-              <span class="score">4.9</span>
+              <span class="score">{{ reviewsSummary.averageOverallRating | number:'1.1-1' }}</span>
               <span class="denom">/ 5.0</span>
             </div>
-            <p class="review-count">128 TOTAL REVIEWS</p>
+            <p class="review-count">{{ reviewsSummary.totalReviews }} TOTAL REVIEWS</p>
           </div>
         </div>
 
-        <div class="rating-rows">
+        <div *ngIf="isLoadingReviews" class="panel review-feedback">
+          <p>Loading freelancer reviews...</p>
+        </div>
+
+        <div *ngIf="reviewsError" class="panel review-feedback review-feedback--error">
+          <p>{{ reviewsError }}</p>
+        </div>
+
+        <div *ngIf="!isLoadingReviews && !reviewsError" class="rating-rows">
           <div class="rating-row">
             <span>Professionalism</span>
             <div class="stars">
-              <span class="material-symbols-outlined filled">star</span>
-              <span class="material-symbols-outlined filled">star</span>
-              <span class="material-symbols-outlined filled">star</span>
-              <span class="material-symbols-outlined filled">star</span>
-              <span class="material-symbols-outlined filled">star</span>
+              <span
+                *ngFor="let star of getStars(reviewsSummary.averageProfessionalism)"
+                class="material-symbols-outlined"
+                [class.filled]="star"
+                [class.empty]="!star"
+              >
+                star
+              </span>
             </div>
           </div>
           <div class="rating-row">
-            <span>Quality of Service</span>
+            <span>Quality of Code</span>
             <div class="stars">
-              <span class="material-symbols-outlined filled">star</span>
-              <span class="material-symbols-outlined filled">star</span>
-              <span class="material-symbols-outlined filled">star</span>
-              <span class="material-symbols-outlined filled">star</span>
-              <span class="material-symbols-outlined empty">star</span>
+              <span
+                *ngFor="let star of getStars(reviewsSummary.averageQualityOfCode)"
+                class="material-symbols-outlined"
+                [class.filled]="star"
+                [class.empty]="!star"
+              >
+                star
+              </span>
             </div>
           </div>
         </div>
 
-        <button class="outline-btn">See All Reviews</button>
+        <button
+          *ngIf="reviews.length > 3"
+          type="button"
+          class="outline-btn"
+          (click)="toggleShowAllReviews()"
+        >
+          {{ showAllReviews ? 'Show Less Reviews' : 'See All Reviews' }}
+        </button>
+      </section>
+
+      <section class="block" *ngIf="profile.role === 'freelancer'">
+        <h2>REVIEWS</h2>
+
+        <div *ngIf="!isLoadingReviews && !reviewsError && !reviews.length" class="panel">
+          <p>No reviews yet. Completed projects will appear here with client ratings.</p>
+        </div>
+
+        <div class="review-list" *ngIf="!isLoadingReviews && !reviewsError && reviews.length">
+          <article class="panel review-card" *ngFor="let review of displayedReviews">
+            <div class="review-card__top">
+              <div>
+                <p class="review-card__project">{{ review.projectTitle || 'Untitled Project' }}</p>
+                <p class="review-card__date" *ngIf="review.updatedAt || review.createdAt">
+                  {{ (review.updatedAt || review.createdAt) | date:'mediumDate' }}
+                </p>
+              </div>
+              <div class="review-card__overall">
+                {{ review.overallRating | number:'1.1-1' }}/5
+              </div>
+            </div>
+
+            <div class="review-card__metrics">
+              <div class="rating-row">
+                <span>Professionalism</span>
+                <div class="stars">
+                  <span
+                    *ngFor="let star of getStars(review.professionalismRating)"
+                    class="material-symbols-outlined"
+                    [class.filled]="star"
+                    [class.empty]="!star"
+                  >
+                    star
+                  </span>
+                </div>
+              </div>
+
+              <div class="rating-row">
+                <span>Quality of Code</span>
+                <div class="stars">
+                  <span
+                    *ngFor="let star of getStars(review.qualityOfCodeRating)"
+                    class="material-symbols-outlined"
+                    [class.filled]="star"
+                    [class.empty]="!star"
+                  >
+                    star
+                  </span>
+                </div>
+              </div>
+            </div>
+          </article>
+        </div>
       </section>
 
       <button class="primary-btn" routerLink="/edit-profile">

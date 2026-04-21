@@ -7,6 +7,7 @@ import { FormsModule } from '@angular/forms';
 import { MarketProduct, MarketProductCardComponent } from '../../components/market-product-card/market-product-card.component';
 import { MarketProductInfoComponent } from '../../components/market-product-info/market-product-info.component';
 import { environment } from '../../../environments/environment';
+import { categoriesData, Category } from '../../categories';
 
 interface MarketProductApiResponse {
   id?: string;
@@ -65,7 +66,7 @@ export class MarketComponent implements OnInit {
   selectedProduct: MarketProduct | null = null;
   searchTerm = '';
   selectedCategory = 'All Assets';
-  readonly categories = ['All Assets', 'Templates', 'Icons', '3D'];
+  readonly categories = this.buildMarketplaceCategories();
   featuredAssets: MarketProduct[] = [];
 
   activeOffers: MarketplaceProjectOffer[] = [];
@@ -187,5 +188,11 @@ export class MarketComponent implements OnInit {
   closeProductInfo(): void {
     this.isProductInfoOpen = false;
     this.selectedProduct = null;
+  }
+
+  private buildMarketplaceCategories(): string[] {
+    const sharedCategories = categoriesData.map((category: Category) => category.name);
+    const marketplaceCategories = ['Templates', 'Icons', '3D'];
+    return ['All Assets', ...new Set([...marketplaceCategories, ...sharedCategories])];
   }
 }

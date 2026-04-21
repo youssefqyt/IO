@@ -3,11 +3,18 @@ import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { IonicModule } from '@ionic/angular';
 import { RouterModule } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { BrowseProjectCard, ProjectCardComponent } from '../../components/project-card/project-card.component';
 import { environment } from '../../../environments/environment';
+import { categoriesData, Category } from '../../categories';
 
 interface BrowseProjectApiResponse extends BrowseProjectCard {
   id?: string;
+  category?: string;
+  projectType?: string;
+}
+
+interface BrowseProjectView extends BrowseProjectCard {
   category?: string;
   projectType?: string;
 }
@@ -17,11 +24,13 @@ interface BrowseProjectApiResponse extends BrowseProjectCard {
   templateUrl: './browse-project.component.html',
   styleUrls: ['./browse-project.component.scss'],
   standalone: true,
-  imports: [CommonModule, IonicModule, RouterModule, ProjectCardComponent]
+  imports: [CommonModule, IonicModule, RouterModule, FormsModule, ProjectCardComponent]
 })
 export class BrowseProjectComponent implements OnInit {
-  readonly categories = ['All Jobs', 'Development', 'Design', 'Marketing'];
-  projects: BrowseProjectCard[] = [];
+  readonly categories = this.buildBrowseCategories();
+  searchTerm = '';
+  selectedCategory = 'All Jobs';
+  projects: BrowseProjectView[] = [];
 
   constructor(private readonly http: HttpClient) {}
 
@@ -31,6 +40,42 @@ export class BrowseProjectComponent implements OnInit {
 
   ionViewWillEnter(): void {
     this.loadProjects();
+  }
+
+  get filteredProjects(): BrowseProjectCard[] {
+    const query = this.searchTerm.trim().toLowerCase();
+
+    return this.projects.filter((project) => {
+      const matchesCategory =
+        this.selectedCategory === 'All Jobs' ||
+        (project.category || '').toLowerCase() === this.selectedCategory.toLowerCase();
+
+      if (!matchesCategory) {
+        return false;
+      }
+
+      if (!query) {
+        return true;
+      }
+
+      const searchableText = [
+        project.title,
+        project.description,
+        project.type,
+        project.category,
+        project.deadline,
+        project.amount
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+
+      return searchableText.includes(query);
+    });
+  }
+
+  selectCategory(category: string): void {
+    this.selectedCategory = category;
   }
 
   private loadProjects(): void {
@@ -47,6 +92,8 @@ export class BrowseProjectComponent implements OnInit {
           amount: project.amount,
           deadline: project.deadline,
           briefFileName: project.briefFileName,
+          category: project.category,
+          projectType: project.projectType,
         }));
       },
       error: (error) => {
@@ -54,5 +101,10 @@ export class BrowseProjectComponent implements OnInit {
         this.projects = [];
       }
     });
+  }
+
+  private buildBrowseCategories(): string[] {
+    const sharedCategories = categoriesData.map((category: Category) => category.name);
+    return ['All Jobs', ...sharedCategories];
   }
 }

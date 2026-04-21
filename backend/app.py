@@ -7,14 +7,13 @@ from signUp import register_user
 from login import login_user
 from changepassword import change_password
 from MarketPlace import get_marketplace_products, add_marketplace_product
-from Messages import get_conversations, get_messages, send_message, mark_messages_read
+from Messages import get_conversations, get_messages, send_message
 from AddProject import add_project
 from BrowseProject import get_projects, get_project_details
 from SubmitProposal import submit_proposal, get_send_proposals, update_send_proposal_status
-from Myjob import get_active_myjobs, update_myjob_workflow_status, deliver_myjob_assets, mark_delivery_viewed, get_myjob_detail
-from Pay import pay_product, release_myjob_payment, get_freelancer_earnings_summary
+from Myjob import get_active_myjobs, update_myjob_workflow_status, deliver_myjob_assets, mark_delivery_viewed
+from Pay import pay_product, release_myjob_payment
 from Sprint import create_sprint, get_sprints_for_proposal, get_sprints_by_filters, pay_sprint
-from rate import create_or_update_rate, get_reviews
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = SECRET_KEY
@@ -65,9 +64,9 @@ def messages_route():
     return get_messages(db)
 
 
-@app.route('/api/messages/read', methods=['POST'])
-def mark_messages_read_route():
-    return mark_messages_read(db)
+@app.route('/api/messages', methods=['POST'])
+def send_message_route():
+    return send_message(db)
 
 
 @app.route('/api/projects', methods=['GET'])
@@ -103,11 +102,6 @@ def change_send_proposal_status(proposal_id):
 @app.route('/api/myjobs/active', methods=['GET'])
 def list_active_myjobs():
     return get_active_myjobs(db)
-
-
-@app.route('/api/myjobs/<proposal_id>', methods=['GET'])
-def get_myjob_detail_route(proposal_id):
-    return get_myjob_detail(db, proposal_id)
 
 
 @app.route('/api/myjobs/<proposal_id>/workflow-status', methods=['PATCH'])
@@ -161,21 +155,6 @@ def complete_project_route(proposal_id):
 def get_project_history_route():
     from ProjectHistory import get_project_history
     return get_project_history(db)
-
-
-@app.route('/api/myjobs/earnings-summary', methods=['GET'])
-def get_freelancer_earnings_summary_route():
-    return get_freelancer_earnings_summary(db)
-
-
-@app.route('/api/rates', methods=['POST'])
-def create_or_update_rate_route():
-    return create_or_update_rate(db)
-
-
-@app.route('/api/rates', methods=['GET'])
-def get_reviews_route():
-    return get_reviews(db)
 
 
 @app.route('/api/admin/dashboard-stats', methods=['GET'])

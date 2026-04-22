@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 
 from flask import jsonify, request
 
-from Myjob import (
+from myjob import (
     DEFAULT_CURRENCY,
     _contract_amount,
     _format_relative_time,

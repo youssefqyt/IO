@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 
 from bson import ObjectId
 from flask import jsonify, request
-from Myjob import create_myjob_client_record, create_myjob_freelancer_record
+from myjob import create_myjob_client_record, create_myjob_freelancer_record
 
 
 def validate_proposal_payload(data):

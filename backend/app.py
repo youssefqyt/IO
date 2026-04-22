@@ -7,11 +7,11 @@ from signUp import register_user
 from login import login_user
 from changepassword import change_password
 from MarketPlace import get_marketplace_products, add_marketplace_product
-from Messages import get_conversations, get_messages, send_message
+from Messages import get_conversations, get_messages, send_message, mark_messages_read
 from AddProject import add_project
 from BrowseProject import get_projects, get_project_details
 from SubmitProposal import submit_proposal, get_send_proposals, update_send_proposal_status
-from Myjob import get_active_myjobs, update_myjob_workflow_status, deliver_myjob_assets, mark_delivery_viewed
+from myjob import get_active_myjobs, update_myjob_workflow_status, deliver_myjob_assets, mark_delivery_viewed
 from Pay import pay_product, release_myjob_payment
 from Sprint import create_sprint, get_sprints_for_proposal, get_sprints_by_filters, pay_sprint
 from rate import create_or_update_rate, get_reviews
@@ -71,6 +71,11 @@ def send_message_route():
     return send_message(db)
 
 
+@app.route('/api/messages/read', methods=['POST'])
+def mark_messages_read_route():
+    return mark_messages_read(db)
+
+
 @app.route('/api/projects', methods=['GET'])
 def browse_projects():
     return get_projects(db)
@@ -118,7 +123,7 @@ def submit_myjob_delivery(proposal_id):
 
 @app.route('/api/myjobs/<proposal_id>/mark-delivery-viewed', methods=['POST'])
 def mark_delivery_viewed_route(proposal_id):
-    from Myjob import mark_delivery_viewed
+    from myjob import mark_delivery_viewed
     return mark_delivery_viewed(db, proposal_id)
 
 

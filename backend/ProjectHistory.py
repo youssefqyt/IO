@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from flask import jsonify, request
-from Myjob import _load_authorized_job, _sync_job_update, _now_utc, _contract_amount, _safe_float
+from myjob import _load_authorized_job, _sync_job_update, _now_utc, _contract_amount, _safe_float
 
 
 def complete_project(db, proposal_id):

@@ -4,7 +4,7 @@ from typing import Optional
 from flask import jsonify, request
 from bson import ObjectId
 
-from Myjob import (
+from myjob import (
     _safe_float,
     _safe_int,
     _serialize_delivery_files,
@@ -464,3 +464,4 @@ def complete_project(db, proposal_id: str):
         "message": "Project completed successfully and moved to history.",
         "historyId": str(project_history_doc.get("_id")),
     }), 200
+

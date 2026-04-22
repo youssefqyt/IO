@@ -186,6 +186,24 @@ def compte_requests_route():
     return get_compte_requests(db)
 
 
+@app.route('/api/admin/product-requests', methods=['GET'])
+def product_requests_route():
+    from Admin import get_pending_product_requests
+    return get_pending_product_requests(db)
+
+
+@app.route('/api/admin/product-requests/<request_id>/approve', methods=['POST'])
+def approve_product_request_route(request_id):
+    from Admin import approve_product_request
+    return approve_product_request(db, request_id)
+
+
+@app.route('/api/admin/product-requests/<request_id>/reject', methods=['DELETE'])
+def reject_product_request_route(request_id):
+    from Admin import reject_product_request
+    return reject_product_request(db, request_id)
+
+
 @app.route('/api/interest', methods=['GET'])
 def get_interest_data_route():
     return get_interest_data(db)

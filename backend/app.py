@@ -15,7 +15,7 @@ from myjob import get_active_myjobs, update_myjob_workflow_status, deliver_myjob
 from Pay import pay_product, release_myjob_payment
 from Sprint import create_sprint, get_sprints_for_proposal, get_sprints_by_filters, pay_sprint
 from rate import create_or_update_rate, get_reviews
-from interest import get_interest_data
+from interest import get_interest_data, save_interest_selection
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = SECRET_KEY
@@ -207,6 +207,11 @@ def reject_product_request_route(request_id):
 @app.route('/api/interest', methods=['GET'])
 def get_interest_data_route():
     return get_interest_data(db)
+
+
+@app.route('/api/interest', methods=['POST'])
+def save_interest_route():
+    return save_interest_selection(db)
 
 
 if __name__ == '__main__':

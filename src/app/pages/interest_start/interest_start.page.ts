@@ -9,6 +9,11 @@ import { environment } from '../../../environments/environment';
 
 interface InterestApiResponse {
   interests?: Interest[];
+  selectedCategories?: string[];
+}
+
+interface SaveInterestResponse {
+  message?: string;
 }
 
 @Component({
@@ -20,6 +25,8 @@ interface InterestApiResponse {
 })
 export class InterestStartPage implements OnInit {
   interests: Interest[] = [];
+  isSubmitting = false;
+  saveErrorMessage = '';
 
   constructor(
     private readonly router: Router,
@@ -31,6 +38,7 @@ export class InterestStartPage implements OnInit {
   }
 
   toggleInterest(item: Interest): void {
+    this.saveErrorMessage = '';
     item.selected = !item.selected;
   }
 
@@ -42,22 +50,47 @@ export class InterestStartPage implements OnInit {
   continue(): void {
     const selectedInterests = this.interests
       .filter((item) => item.selected)
-      .map((item) => item.name);
+      .map((item) => item.name.trim())
+      .filter((item) => item.length > 0);
 
-    localStorage.setItem('fw_interests_seen', 'true');
-    localStorage.setItem('fw_selected_interests', JSON.stringify(selectedInterests));
-    this.router.navigateByUrl('/guest');
+    if (selectedInterests.length === 0 || this.isSubmitting) {
+      this.saveErrorMessage = selectedInterests.length > 0 ? '' : 'Please choose at least one category to continue.';
+      return;
+    }
+
+    this.isSubmitting = true;
+    this.saveErrorMessage = '';
+
+    this.http.post<SaveInterestResponse>(`${environment.apiUrl}/interest`, {
+      categories: selectedInterests
+    }).subscribe({
+      next: async () => {
+        this.isSubmitting = false;
+        localStorage.setItem('fw_interests_seen', 'true');
+        localStorage.setItem('fw_selected_interest', selectedInterests[0] || '');
+        localStorage.setItem('fw_selected_interests', JSON.stringify(selectedInterests));
+        await this.router.navigateByUrl('/guest');
+      },
+      error: (error) => {
+        this.isSubmitting = false;
+        this.saveErrorMessage = error?.error?.message
+          || (error?.error?.errors ? Object.values(error.error.errors).join(' ') : '')
+          || 'Unable to save your selected categories right now.';
+      }
+    });
   }
 
   private loadInterests(): void {
     this.http.get<InterestApiResponse>(`${environment.apiUrl}/interest`).subscribe({
       next: (response) => {
         const apiInterests = Array.isArray(response?.interests) ? response.interests : [];
-        this.interests = apiInterests.length > 0 ? apiInterests : this.getFallbackInterests();
+        this.interests = this.normalizeInterests(
+          apiInterests.length > 0 ? apiInterests : this.getFallbackInterests()
+        );
       },
       error: (error) => {
         console.error('Failed to load interests', error);
-        this.interests = this.getFallbackInterests();
+        this.interests = this.normalizeInterests(this.getFallbackInterests());
       }
     });
   }
@@ -81,5 +114,22 @@ export class InterestStartPage implements OnInit {
       { name: '3D Design', icon: 'view_in_ar', selected: false },
       { name: 'Music Prod', icon: 'library_music', selected: false }
     ];
+  }
+
+  private normalizeInterests(interests: Interest[]): Interest[] {
+    const normalizedInterests = interests.map((item) => ({ ...item }));
+
+    if (normalizedInterests.length === 0) {
+      return normalizedInterests;
+    }
+
+    if (!normalizedInterests.some((item) => item.selected)) {
+      normalizedInterests[0].selected = true;
+      if (normalizedInterests[1]) {
+        normalizedInterests[1].selected = true;
+      }
+    }
+
+    return normalizedInterests;
   }
 }

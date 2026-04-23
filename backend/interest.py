@@ -1,7 +1,63 @@
 import base64
 from datetime import datetime, timezone
 
-from flask import jsonify
+from flask import jsonify, request
+
+
+DEFAULT_INTEREST_LABELS = [
+    "Graphic Design",
+    "Web Dev",
+    "AI Models",
+    "Marketing",
+    "Video Editor",
+    "Illustration",
+    "Copywriting",
+    "Photography",
+    "Mobile Dev",
+    "UI/UX",
+    "Data Entry",
+    "SEO",
+    "Project Mgmt",
+    "Translation",
+    "3D Design",
+    "Music Prod",
+]
+
+FALLBACK_INTEREST_CATEGORIES = [
+    "Graphic Design",
+    "Web Dev",
+    "Marketing",
+]
+
+PROJECT_LIMIT = 3
+PRODUCT_LIMIT = 2
+
+CATEGORY_ALIASES = {
+    "web development": "web dev",
+    "mobile development": "mobile dev",
+    "project management": "project mgmt",
+    "music production": "music prod",
+    "3d": "3d design",
+}
+
+CATEGORY_DISPLAY_LABELS = {
+    "graphic design": "Graphic Design",
+    "web dev": "Web Dev",
+    "ai models": "AI Models",
+    "marketing": "Marketing",
+    "video editor": "Video Editor",
+    "illustration": "Illustration",
+    "copywriting": "Copywriting",
+    "photography": "Photography",
+    "mobile dev": "Mobile Dev",
+    "ui ux": "UI/UX",
+    "data entry": "Data Entry",
+    "seo": "SEO",
+    "project mgmt": "Project Mgmt",
+    "translation": "Translation",
+    "3d design": "3D Design",
+    "music prod": "Music Prod",
+}
 
 
 def _format_relative_time(value):
@@ -107,44 +163,50 @@ def _normalize_includes(includes_value):
     return []
 
 
-def _normalize_interest_label(value):
-    text = str(value or "").strip()
-    if not text:
+def _normalize_category_key(value):
+    normalized = str(value or "").strip().lower()
+    if not normalized:
         return ""
 
-    normalized = text.replace("-", " ").replace("_", " ")
-    return " ".join(part.capitalize() for part in normalized.split())
+    for separator in ["-", "_", "/", "&"]:
+        normalized = normalized.replace(separator, " ")
+
+    normalized = " ".join(normalized.split())
+    return CATEGORY_ALIASES.get(normalized, normalized)
+
+
+def _normalize_interest_label(value):
+    normalized_key = _normalize_category_key(value)
+    if not normalized_key:
+        return ""
+
+    if normalized_key in CATEGORY_DISPLAY_LABELS:
+        return CATEGORY_DISPLAY_LABELS[normalized_key]
+
+    return " ".join(part.capitalize() for part in normalized_key.split())
 
 
 def _interest_icon(label):
-    normalized = str(label or "").strip().lower()
+    normalized = _normalize_category_key(label)
     icon_map = {
         "graphic design": "brush",
         "design": "brush",
         "web dev": "code",
-        "web development": "code",
         "development": "code",
-        "ai": "psychology",
         "ai models": "psychology",
         "marketing": "trending_up",
         "video editor": "videocam",
-        "video editing": "videocam",
         "illustration": "draw",
         "copywriting": "translate",
         "photography": "photo_camera",
         "mobile dev": "phone_iphone",
-        "mobile development": "phone_iphone",
         "ui ux": "design_services",
-        "ui/ux": "design_services",
         "data entry": "table_rows",
         "seo": "query_stats",
         "project mgmt": "fact_check",
-        "project management": "fact_check",
         "translation": "g_translate",
-        "3d": "view_in_ar",
         "3d design": "view_in_ar",
         "music prod": "library_music",
-        "music production": "library_music",
         "branding": "palette",
         "writing": "edit_note",
         "app design": "devices",
@@ -154,8 +216,27 @@ def _interest_icon(label):
     return icon_map.get(normalized, "grid_view")
 
 
-def _build_interest_items(project_documents, product_documents):
+def _normalize_selected_categories(values):
+    normalized_categories = []
+    seen = set()
+
+    for value in values:
+        label = _normalize_interest_label(value)
+        key = _normalize_category_key(label)
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        normalized_categories.append(label)
+
+    return normalized_categories
+
+
+def _build_interest_items(project_documents, product_documents, selected_categories=None):
     values = []
+    selected_categories = selected_categories or []
+
+    for selected_label in _normalize_selected_categories(selected_categories):
+        values.append(selected_label)
 
     for document in project_documents:
         label = _normalize_interest_label(document.get("category"))
@@ -167,54 +248,203 @@ def _build_interest_items(project_documents, product_documents):
         if label:
             values.append(label)
 
-    if not values:
-        values = [
-            "Graphic Design",
-            "Web Dev",
-            "AI Models",
-            "Marketing",
-            "Video Editor",
-            "Illustration",
-            "Copywriting",
-            "Photography",
-        ]
+    values.extend(DEFAULT_INTEREST_LABELS)
 
     unique_values = []
     seen = set()
     for value in values:
-        key = value.lower()
-        if key in seen:
+        key = _normalize_category_key(value)
+        if not key or key in seen:
             continue
         seen.add(key)
-        unique_values.append(value)
+        unique_values.append(_normalize_interest_label(value))
 
-    return [
+    selected_keys = {
+        _normalize_category_key(category)
+        for category in selected_categories
+        if _normalize_category_key(category)
+    }
+    items = [
         {
             "name": value,
             "icon": _interest_icon(value),
-            "selected": index < 2,
+            "selected": False,
         }
-        for index, value in enumerate(unique_values[:16])
+        for value in unique_values[:16]
     ]
+
+    if not items:
+        return items
+
+    if selected_keys:
+        for item in items:
+            item["selected"] = _normalize_category_key(item["name"]) in selected_keys
+
+    if not any(item["selected"] for item in items):
+        default_selected_count = min(len(items), 2)
+        for index in range(default_selected_count):
+            items[index]["selected"] = True
+
+    return items
+
+
+def _filter_documents_by_category(documents, field_name, category_keys):
+    normalized_keys = {key for key in category_keys if key}
+    if not normalized_keys:
+        return []
+
+    return [
+        document
+        for document in documents
+        if _normalize_category_key(document.get(field_name)) in normalized_keys
+    ]
+
+
+def _get_saved_interest_categories(db):
+    documents = list(
+        db["Interest"]
+        .find({})
+        .sort([("updatedAt", -1), ("createdAt", -1)])
+    )
+
+    if not documents:
+        return []
+
+    return _normalize_selected_categories(
+        [
+            document.get("category") or document.get("normalizedCategory")
+            for document in documents
+        ]
+    )
+
+
+def _resolve_feed_documents(project_documents, product_documents, selected_categories):
+    selected_keys = {
+        _normalize_category_key(category)
+        for category in selected_categories
+        if _normalize_category_key(category)
+    }
+    fallback_keys = {
+        _normalize_category_key(category)
+        for category in FALLBACK_INTEREST_CATEGORIES
+    }
+
+    if not selected_keys:
+        return (
+            project_documents[:PROJECT_LIMIT],
+            product_documents[:PRODUCT_LIMIT],
+            False,
+        )
+
+    filtered_projects = _filter_documents_by_category(
+        project_documents,
+        "category",
+        selected_keys,
+    )
+    filtered_products = _filter_documents_by_category(
+        product_documents,
+        "type",
+        selected_keys,
+    )
+
+    used_fallback = False
+
+    if not filtered_projects:
+        filtered_projects = _filter_documents_by_category(
+            project_documents,
+            "category",
+            fallback_keys,
+        )
+        used_fallback = True
+
+    if not filtered_products:
+        filtered_products = _filter_documents_by_category(
+            product_documents,
+            "type",
+            fallback_keys,
+        )
+        used_fallback = True
+
+    if not filtered_projects:
+        filtered_projects = project_documents
+
+    if not filtered_products:
+        filtered_products = product_documents
+
+    return (
+        filtered_projects[:PROJECT_LIMIT],
+        filtered_products[:PRODUCT_LIMIT],
+        used_fallback,
+    )
+
+
+def save_interest_selection(db):
+    data = request.get_json() or {}
+    raw_categories = data.get("categories")
+    if isinstance(raw_categories, list):
+        categories = raw_categories
+    else:
+        categories = [data.get("category")]
+
+    normalized_categories = _normalize_selected_categories(categories)
+    if not normalized_categories:
+        return jsonify({"message": "At least one category is required"}), 400
+
+    now = datetime.now(timezone.utc)
+
+    db["Interest"].delete_many({})
+    documents = [
+        {
+            "category": category,
+            "normalizedCategory": _normalize_category_key(category),
+            "createdAt": now,
+            "updatedAt": now,
+        }
+        for category in normalized_categories
+    ]
+    result = db["Interest"].insert_many(documents)
+
+    return jsonify(
+        {
+            "message": "Interest categories saved successfully",
+            "interests": [
+                {
+                    "id": str(inserted_id),
+                    "category": category,
+                }
+                for inserted_id, category in zip(result.inserted_ids, normalized_categories)
+            ],
+            "categories": normalized_categories,
+        }
+    ), 201
 
 
 def get_interest_data(db):
     try:
-        project_documents = list(
+        all_project_documents = list(
             db["Project"]
             .find({"status": "open"})
             .sort("createdAt", -1)
-            .limit(3)
         )
 
-        product_documents = list(
+        all_product_documents = list(
             db["MarketPlace"]
             .find()
             .sort("createdAt", -1)
-            .limit(2)
         )
 
-        interests = _build_interest_items(project_documents, product_documents)
+        selected_categories = _get_saved_interest_categories(db)
+        project_documents, product_documents, used_fallback = _resolve_feed_documents(
+            all_project_documents,
+            all_product_documents,
+            selected_categories,
+        )
+
+        interests = _build_interest_items(
+            all_project_documents,
+            all_product_documents,
+            selected_categories,
+        )
 
         projects = []
         for document in project_documents:
@@ -256,7 +486,10 @@ def get_interest_data(db):
         return jsonify({
             "interests": interests,
             "projects": projects,
-            "products": products
+            "products": products,
+            "selectedCategory": selected_categories[0] if selected_categories else "",
+            "selectedCategories": selected_categories,
+            "fallbackCategories": FALLBACK_INTEREST_CATEGORIES if used_fallback else [],
         }), 200
     except Exception as error:
         return jsonify({

@@ -157,8 +157,21 @@ h1 {
   gap: 6px;
 }
 
+.continue-btn:disabled {
+  cursor: wait;
+  opacity: 0.8;
+}
+
 .continue-btn .material-symbols-outlined {
   font-size: 18px;
+}
+
+.error-message {
+  margin: 10px 0 0;
+  color: #d14343;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
 }
 
 .hint {

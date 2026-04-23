@@ -12,6 +12,7 @@ interface GuestOffer {
   title: string;
   budget: string;
   duration: string;
+  category?: string;
   tags?: string[];
   avatar?: string;
   extraPeople?: string;
@@ -55,8 +56,12 @@ interface InterestProductApiResponse {
 }
 
 interface InterestFeedApiResponse {
+  interests?: Array<{ name?: string; selected?: boolean }>;
   projects?: InterestProjectApiResponse[];
   products?: InterestProductApiResponse[];
+  selectedCategory?: string;
+  selectedCategories?: string[];
+  fallbackCategories?: string[];
 }
 
 @Component({
@@ -67,6 +72,33 @@ interface InterestFeedApiResponse {
   imports: [CommonModule, IonicModule, MarketProductCardComponent, MarketProductInfoComponent],
 })
 export class GuestComponent implements OnInit {
+  private static readonly ALL_OFFERS_FILTER = 'All Offers';
+  private static readonly CATEGORY_ALIASES: Record<string, string> = {
+    'web development': 'web dev',
+    'mobile development': 'mobile dev',
+    'project management': 'project mgmt',
+    'music production': 'music prod',
+    '3d': '3d design',
+  };
+  private static readonly CATEGORY_DISPLAY_LABELS: Record<string, string> = {
+    'graphic design': 'Graphic Design',
+    'web dev': 'Web Dev',
+    'ai models': 'AI Models',
+    'marketing': 'Marketing',
+    'video editor': 'Video Editor',
+    'illustration': 'Illustration',
+    'copywriting': 'Copywriting',
+    'photography': 'Photography',
+    'mobile dev': 'Mobile Dev',
+    'ui ux': 'UI/UX',
+    'data entry': 'Data Entry',
+    'seo': 'SEO',
+    'project mgmt': 'Project Mgmt',
+    'translation': 'Translation',
+    '3d design': '3D Design',
+    'music prod': 'Music Prod',
+  };
+
   private readonly router = inject(Router);
   private readonly http = inject(HttpClient);
 
@@ -74,7 +106,8 @@ export class GuestComponent implements OnInit {
   isProductInfoOpen = false;
   selectedProduct: MarketProduct | null = null;
   supportMessage = '';
-  readonly filters = ['All Offers', 'Design', 'Development', 'Marketing'];
+  filters = [GuestComponent.ALL_OFFERS_FILTER];
+  selectedFilter = GuestComponent.ALL_OFFERS_FILTER;
   readonly settingsItems: SettingsItem[] = [
     { icon: 'person', label: 'Profile', action: 'login', hint: 'Login required' },
     { icon: 'shield_person', label: 'Account Security', action: 'login', hint: 'Login required' },
@@ -90,6 +123,22 @@ export class GuestComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadTrendingFeed();
+  }
+
+  get filteredTrendingOffers(): GuestOffer[] {
+    if (this.isAllOffersSelected()) {
+      return this.trendingOffers;
+    }
+
+    return this.trendingOffers.filter((offer) => this.matchesSelectedCategory(offer.category, offer.tags));
+  }
+
+  get filteredFeaturedAssets(): MarketProduct[] {
+    if (this.isAllOffersSelected()) {
+      return this.featuredAssets;
+    }
+
+    return this.featuredAssets.filter((product) => this.matchesSelectedCategory(product.category));
   }
 
   goToLogin(): void {
@@ -142,6 +191,10 @@ export class GuestComponent implements OnInit {
     document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
+  selectFilter(filter: string): void {
+    this.selectedFilter = filter;
+  }
+
   private loadTrendingFeed(): void {
     this.http.get<InterestFeedApiResponse>(`${environment.apiUrl}/interest`).subscribe({
       next: (response) => {
@@ -152,6 +205,7 @@ export class GuestComponent implements OnInit {
           title: project.title || 'Untitled project',
           budget: project.amount || 'Budget not specified',
           duration: project.deadline || 'Deadline flexible',
+          category: this.normalizeCategoryLabel(project.category),
           tags: this.buildProjectTags(project),
           kind: 'service',
         }));
@@ -167,9 +221,13 @@ export class GuestComponent implements OnInit {
           description: product.description || '',
           includes: Array.isArray(product.includes) ? product.includes : [],
         }));
+        this.filters = this.buildFilters(response, this.trendingOffers, this.featuredAssets);
+        this.ensureSelectedFilter();
       },
       error: (error) => {
         console.error('Failed to load guest trending feed', error);
+        this.filters = [GuestComponent.ALL_OFFERS_FILTER];
+        this.selectedFilter = GuestComponent.ALL_OFFERS_FILTER;
         this.trendingOffers = [];
         this.featuredAssets = [];
       }
@@ -181,5 +239,115 @@ export class GuestComponent implements OnInit {
       .map((value) => String(value || '').trim())
       .filter((value, index, array) => value.length > 0 && array.indexOf(value) === index)
       .slice(0, 2);
+  }
+
+  private buildFilters(
+    response: InterestFeedApiResponse,
+    offers: GuestOffer[],
+    products: MarketProduct[]
+  ): string[] {
+    const explicitSelections = Array.isArray(response?.selectedCategories)
+      ? response.selectedCategories
+      : [];
+    const selectedInterestItems = Array.isArray(response?.interests)
+      ? response.interests
+          .filter((item) => item?.selected)
+          .map((item) => item?.name || '')
+      : [];
+    const discoveredCategories = [
+      ...offers.map((offer) => offer.category || ''),
+      ...products.map((product) => product.category || ''),
+    ];
+
+    const values = [...explicitSelections, ...selectedInterestItems, ...discoveredCategories];
+    const uniqueLabels: string[] = [];
+    const seen = new Set<string>();
+
+    values.forEach((value) => {
+      const label = this.normalizeCategoryLabel(value);
+      const key = this.normalizeCategoryKey(value);
+      if (!label || !key || seen.has(key)) {
+        return;
+      }
+
+      seen.add(key);
+      uniqueLabels.push(label);
+    });
+
+    return [GuestComponent.ALL_OFFERS_FILTER, ...uniqueLabels];
+  }
+
+  private ensureSelectedFilter(): void {
+    const hasSelectedFilter = this.filters.some(
+      (filter) => this.normalizeCategoryKey(filter) === this.normalizeCategoryKey(this.selectedFilter)
+    );
+
+    if (!hasSelectedFilter) {
+      this.selectedFilter = GuestComponent.ALL_OFFERS_FILTER;
+    }
+  }
+
+  private matchesSelectedCategory(category?: string, tags: string[] = []): boolean {
+    const selectedKey = this.normalizeCategoryKey(this.selectedFilter);
+    if (!selectedKey || this.isAllOffersSelected()) {
+      return true;
+    }
+
+    const valuesToSearch = [category, ...tags];
+    return valuesToSearch.some((value) => this.normalizeCategoryKey(value) === selectedKey);
+  }
+
+  private isAllOffersSelected(): boolean {
+    return this.normalizeCategoryKey(this.selectedFilter) === this.normalizeCategoryKey(GuestComponent.ALL_OFFERS_FILTER);
+  }
+
+  private normalizeCategoryLabel(value?: string): string {
+    const rawValue = String(value || '').trim();
+    if (!rawValue) {
+      return '';
+    }
+
+    const normalizedKey = this.normalizeCategoryKey(rawValue);
+    const displayLabel = GuestComponent.CATEGORY_DISPLAY_LABELS[normalizedKey];
+    if (displayLabel) {
+      return displayLabel;
+    }
+
+    const words = normalizedKey.split(' ');
+    if (words.length === 0) {
+      return rawValue;
+    }
+
+    return words
+      .map((word) => {
+        if (word === 'ui') {
+          return 'UI';
+        }
+
+        if (word === 'ux') {
+          return 'UX';
+        }
+
+        if (word === '3d') {
+          return '3D';
+        }
+
+        return word.charAt(0).toUpperCase() + word.slice(1);
+      })
+      .join(' ');
+  }
+
+  private normalizeCategoryKey(value?: string): string {
+    const normalizedValue = String(value || '').trim().toLowerCase();
+    if (!normalizedValue) {
+      return '';
+    }
+
+    const compactValue = normalizedValue
+      .replace(/[-_/&]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    return GuestComponent.CATEGORY_ALIASES[compactValue] || compactValue;
   }
 }

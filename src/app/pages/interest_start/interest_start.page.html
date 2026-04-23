@@ -9,7 +9,7 @@
       </div>
 
       <h1>What are you interested in?</h1>
-      <p class="subtitle">Choose categories to customize your feed and find relevant opportunities.</p>
+      <p class="subtitle">Choose multiple categories to customize your feed and find relevant opportunities.</p>
 
       <div class="grid">
         <div
@@ -30,10 +30,12 @@
         </div>
       </div>
 
-      <button class="continue-btn" (click)="continue()">
-        Continue
-        <span class="material-symbols-outlined">arrow_forward</span>
+      <button class="continue-btn" (click)="continue()" [disabled]="isSubmitting">
+        {{ isSubmitting ? 'Saving...' : 'Continue' }}
+        <span *ngIf="!isSubmitting" class="material-symbols-outlined">arrow_forward</span>
       </button>
+
+      <p *ngIf="saveErrorMessage" class="error-message">{{ saveErrorMessage }}</p>
 
       <p class="hint">YOU CAN CHANGE THIS LATER</p>
     </div>

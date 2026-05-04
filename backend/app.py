@@ -12,7 +12,7 @@ from AddProject import add_project
 from BrowseProject import get_projects, get_project_details
 from SubmitProposal import submit_proposal, get_send_proposals, update_send_proposal_status
 from myjob import get_active_myjobs, update_myjob_workflow_status, deliver_myjob_assets, mark_delivery_viewed
-from Pay import pay_product, release_myjob_payment
+from Pay import pay_product, release_myjob_payment, get_freelancer_earnings_summary
 from Sprint import create_sprint, get_sprints_for_proposal, get_sprints_by_filters, pay_sprint
 from rate import create_or_update_rate, get_reviews
 from interest import get_interest_data, save_interest_selection
@@ -131,6 +131,11 @@ def mark_delivery_viewed_route(proposal_id):
 def release_myjob_payment_route(proposal_id):
     from Pay import release_myjob_payment
     return release_myjob_payment(db, proposal_id)
+
+
+@app.route('/api/myjobs/earnings-summary', methods=['GET'])
+def freelancer_earnings_summary_route():
+    return get_freelancer_earnings_summary(db)
 
 
 @app.route('/api/myjobs/<proposal_id>/sprints', methods=['POST'])

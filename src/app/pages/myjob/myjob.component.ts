@@ -347,9 +347,12 @@ export class MyjobComponent implements OnInit {
     this.selectedProjectBriefFileName = '';
     this.selectedProjectBriefFileData = '';
 
+    if (project.proposalId) {
+      this.loadProjectSprints(project);
+    }
+
     if (project.projectId) {
       this.loadSelectedProjectDetails(project.projectId);
-      this.loadProjectSprints(project);
     }
   }
 
@@ -430,11 +433,23 @@ export class MyjobComponent implements OnInit {
 
         if (this.selectedProject?.sprints) {
           this.selectedProject.sprints = this.selectedProject.sprints.map((item) => (
-            item.sprintId === sprint.sprintId ? { ...item, status: 'paid', paidAtLabel: 'Just now', canAccessFiles: true, submittedAt: item.submittedAt || 'now' } : item
+            item.sprintId === sprint.sprintId
+              ? {
+                  ...item,
+                  status: 'paid',
+                  paidAtLabel: 'Just now',
+                  canAccessFiles: this.hasSprintFileData(item),
+                  submittedAt: item.submittedAt || 'now'
+                }
+              : item
           ));
           this.selectedProject.hasUnpaidSubmittedSprints = this.hasUnpaidSubmittedSprints(this.selectedProject.sprints);
+          this.selectedProject.totalPaidAmount = response.totalPaidAmount;
+          this.selectedProject.remainingBudgetAmount = response.remainingBudgetAmount;
+          this.selectedProject.workflowStatus = this.normalizeWorkflowStatus(response.workflowStatus);
         }
 
+        this.closePaymentModal();
         this.loadActiveProjects();
         if (this.selectedProject) {
           this.loadProjectSprints(this.selectedProject);
@@ -587,7 +602,7 @@ export class MyjobComponent implements OnInit {
       deliveryMessage: this.deliveryMessage.trim(),
       deliveryFiles: this.deliveryFiles,
       requestedAmount: this.deliveryPrice,
-      paymentType: this.deliveryPrice > 0 ? 'paid' : 'unpaid'
+      paymentType: 'unpaid'
     }).subscribe({
       next: (response) => {
         const workflowStatus = this.normalizeWorkflowStatus(response.workflowStatus);
@@ -651,6 +666,11 @@ export class MyjobComponent implements OnInit {
   }
 
   openDeliveryFile(file: MyjobDeliveryFile): void {
+    if (!file.fileData) {
+      this.selectedProjectError = 'This delivery file is not available for preview yet.';
+      return;
+    }
+
     if (this.canPreviewFile(file.fileData)) {
       this.openFilePreview(file.fileName, file.fileData);
       return;
@@ -660,11 +680,20 @@ export class MyjobComponent implements OnInit {
   }
 
   downloadDeliveryFile(file: MyjobDeliveryFile): void {
+    if (!file.fileData) {
+      this.selectedProjectError = 'This delivery file is not available for download yet.';
+      return;
+    }
+
     this.downloadDataFile(file.fileName, file.fileData);
   }
 
-  canPreviewFile(fileData: string): boolean {
-    return fileData.startsWith('data:application/pdf') || fileData.startsWith('data:image/');
+  canPreviewFile(fileData?: string): boolean {
+    return !!fileData && (fileData.startsWith('data:application/pdf') || fileData.startsWith('data:image/'));
+  }
+
+  hasSprintFileData(sprint: SprintRecord): boolean {
+    return !!sprint.deliveryFiles?.some((file) => !!file.fileData);
   }
 
   updateSelectedProjectWorkflowStatus(nextStatus: MyjobWorkflowStatus): void {
@@ -864,15 +893,12 @@ export class MyjobComponent implements OnInit {
   }
 
   private loadProjectSprints(project: MyjobActiveProjectCard): void {
-    if (!this.profile?.id || !this.profile?.role || !project.projectId) {
+    if (!this.profile?.id || !this.profile?.role || !project.proposalId) {
       return;
     }
 
-    this.http.get<any[]>(`${this.apiUrl}/sprints`, {
+    this.http.get<any[]>(`${this.apiUrl}/myjobs/${project.proposalId}/sprints`, {
       params: {
-        projectId: project.projectId,
-        clientId: project.clientId || '',
-        freelancerId: project.freelancerId || '',
         userId: this.profile.id,
         role: this.profile.role
       }
@@ -901,19 +927,24 @@ export class MyjobComponent implements OnInit {
   }
 
   private normalizeSprintRecord(record: any): SprintRecord {
+    const paymentStatus = (record?.status ?? record?.paymentStatus ?? '').toString().toLowerCase();
+    const normalizedStatus: 'paid' | 'unpaid' = paymentStatus === 'paid' ? 'paid' : 'unpaid';
+    const deliveryFiles = Array.isArray(record?.deliveryFiles) ? record.deliveryFiles : [];
+    const hasFileData = deliveryFiles.some((file: any) => !!file?.fileData);
+
     return {
-      sprintId: record.id,
+      sprintId: record?.id || record?.sprintId || '',
       sprintNumber: record.sprintNumber || 0,
       title: record.title || `Sprint ${record.sprintNumber || 0}`,
       description: record.description || '',
-      status: record.status === 'paid' ? 'paid' : 'unpaid',
-      price: record.price || 0,
+      status: normalizedStatus,
+      price: Number(record?.price || 0),
       deliveryMessage: record.deliveryMessage || '',
-      deliveryFiles: Array.isArray(record.deliveryFiles) ? record.deliveryFiles : [],
+      deliveryFiles,
       submittedAtLabel: record.deliveredAtLabel || record.submittedAtLabel || '',
       paidAtLabel: record.paidAtLabel || '',
       submittedAt: record.deliveredAtLabel || record.submittedAtLabel || undefined,
-      canAccessFiles: !!record.canAccessFiles,
+      canAccessFiles: hasFileData && (this.isFreelancer || normalizedStatus === 'paid' || !!record?.canAccessFiles),
     };
   }
 
@@ -947,6 +978,9 @@ export class MyjobComponent implements OnInit {
 
   private buildActiveProjectCard(record: ActiveMyjobRecord): MyjobActiveProjectCard {
     const workflowStatus = this.normalizeWorkflowStatus(record.workflowStatus);
+    const normalizedSprints = Array.isArray(record.sprints)
+      ? record.sprints.map((item) => this.normalizeSprintRecord(item))
+      : [];
 
     return this.decorateProjectCard({
       id: record.id,
@@ -972,11 +1006,11 @@ export class MyjobComponent implements OnInit {
       deliveryMessage: record.deliveryMessage,
       deliveryFiles: Array.isArray(record.deliveryFiles) ? record.deliveryFiles : [],
       deliverySubmittedAtLabel: record.deliverySubmittedAtLabel,
-      sprints: record.sprints,
+      sprints: normalizedSprints,
       totalPaidAmount: record.totalPaidAmount,
       remainingBudgetAmount: record.remainingBudgetAmount,
       hasUnreadUpdate: record.hasUnreadUpdate,
-      hasUnpaidSubmittedSprints: (record.sprints || []).some(s => s.status === 'unpaid' && s.submittedAt),
+      hasUnpaidSubmittedSprints: this.hasUnpaidSubmittedSprints(normalizedSprints),
       actionLabel: this.isFreelancer ? 'Submit Work' : undefined,
       actionIcon: this.isFreelancer ? 'arrow_forward' : undefined,
       actionDisabled: this.isClient
@@ -1198,7 +1232,11 @@ export class MyjobComponent implements OnInit {
     });
   }
 
-  private estimateDataUrlSize(value: string): number {
+  private estimateDataUrlSize(value?: string): number {
+    if (!value) {
+      return 0;
+    }
+
     const normalized = value.includes(',') ? value.split(',', 2)[1] : value;
     const padding = (normalized.match(/=/g) || []).length;
     return Math.max(0, Math.floor((normalized.length * 3) / 4) - padding);

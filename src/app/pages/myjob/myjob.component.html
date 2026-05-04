@@ -404,6 +404,18 @@
               <p class="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">{{ sprint.deliveryMessage }}</p>
             </div>
 
+            <div class="mb-3 flex items-center justify-between rounded-xl bg-white dark:bg-slate-800 px-3 py-3">
+              <div>
+                <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                  {{ sprint.status === 'paid' ? 'Paid Amount' : 'Requested Amount' }}
+                </p>
+                <p class="mt-1 text-sm font-semibold text-slate-900 dark:text-white">${{ sprint.price || 0 }}</p>
+              </div>
+              <p *ngIf="sprint.paidAtLabel" class="text-xs text-emerald-600 dark:text-emerald-400">
+                Paid {{ sprint.paidAtLabel }}
+              </p>
+            </div>
+
             <div *ngIf="sprint.deliveryFiles?.length" class="space-y-2">
               <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Files</p>
               <div *ngFor="let file of sprint.deliveryFiles" class="flex items-center justify-between gap-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2">
@@ -413,7 +425,7 @@
                 </div>
                 <div class="flex items-center gap-2">
                   <button
-                    *ngIf="sprint.canAccessFiles"
+                    *ngIf="sprint.canAccessFiles && hasSprintFileData(sprint)"
                     type="button"
                     (click)="openDeliveryFile(file)"
                     class="rounded-lg bg-slate-900 dark:bg-slate-100 px-3 py-1 text-xs font-bold text-white dark:text-slate-900"
@@ -421,7 +433,7 @@
                     Open
                   </button>
                   <button
-                    *ngIf="sprint.canAccessFiles"
+                    *ngIf="sprint.canAccessFiles && hasSprintFileData(sprint)"
                     type="button"
                     (click)="downloadDeliveryFile(file)"
                     class="rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-1 text-xs font-semibold text-slate-700 dark:text-slate-300"
@@ -429,11 +441,12 @@
                     Save
                   </button>
                   <span *ngIf="!sprint.canAccessFiles" class="text-xs text-slate-500">Locked</span>
+                  <span *ngIf="sprint.canAccessFiles && !hasSprintFileData(sprint)" class="text-xs text-slate-500">Unavailable</span>
                 </div>
               </div>
             </div>
 
-            <div *ngIf="isClient && sprint.status === 'unpaid' && sprint.submittedAt" class="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">
+            <div *ngIf="isClient && sprint.status === 'unpaid' && sprint.submittedAt && sprint.price > 0" class="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">
               <button
                 type="button"
                 (click)="payForSprint(sprint)"

@@ -5,6 +5,7 @@ from flask import jsonify, request
 from bson import ObjectId
 
 from myjob import (
+    _authorized_job_collection,
     _safe_float,
     _safe_int,
     _serialize_delivery_files,
@@ -30,6 +31,107 @@ def _normalize_payment_status(value):
     if normalized in {"paid", "unpaid"}:
         return normalized
     return "unpaid"
+
+
+def _serialize_communication_files(files):
+    if not isinstance(files, list):
+        return []
+
+    serialized = []
+    for item in files:
+        if not isinstance(item, dict):
+            continue
+
+        file_name = str(item.get("fileName", "")).strip()
+        if not file_name:
+            continue
+
+        serialized.append({
+            "fileName": file_name,
+            "fileData": str(item.get("fileData", "")).strip(),
+            "mimeType": str(item.get("mimeType", "")).strip(),
+            "sizeBytes": _safe_int(item.get("sizeBytes"), 0),
+        })
+
+    return serialized
+
+
+def _find_job_sprint(job, delivery_sequence: int):
+    for sprint in job.get("sprints", []) or []:
+        if _safe_int(sprint.get("sprintNumber"), 0) == delivery_sequence:
+            return sprint
+    return None
+
+
+def _delivery_status(communication, job_sprint=None):
+    if job_sprint is not None:
+        return _normalize_payment_status(
+            job_sprint.get("paymentStatus") or job_sprint.get("status")
+        )
+
+    communication_status = _normalize_payment_status(communication.get("paymentType"))
+    if communication_status == "paid" or communication.get("paidAt"):
+        return "paid"
+    return "unpaid"
+
+
+def _delivery_amount(communication, job_sprint=None):
+    requested_amount = _safe_float(
+        communication.get("requestedAmount"),
+        (job_sprint or {}).get("price", 0),
+    )
+    approved_amount = _safe_float(communication.get("approvedAmount"), 0)
+    if approved_amount > 0:
+        return approved_amount
+    if requested_amount > 0:
+        return requested_amount
+    return _safe_float((job_sprint or {}).get("price"), 0)
+
+
+def _delivery_files_for_role(communication, job_sprint, role: str, payment_status: str):
+    files = _serialize_delivery_files((job_sprint or {}).get("deliveryFiles"))
+    if not files:
+        files = _serialize_communication_files(communication.get("files"))
+
+    if role == "client" and payment_status != "paid":
+        for file_item in files:
+            file_item.pop("fileData", None)
+
+    return files
+
+
+def _build_delivery_sprint_response(communication, job, role: str):
+    delivery_sequence = _safe_int(communication.get("deliverySequence"), 0)
+    job_sprint = _find_job_sprint(job, delivery_sequence)
+    payment_status = _delivery_status(communication, job_sprint)
+    delivery_files = _delivery_files_for_role(communication, job_sprint, role, payment_status)
+    delivered_at = communication.get("createdAt") or (job_sprint or {}).get("submittedAt")
+    paid_at = communication.get("paidAt") or (job_sprint or {}).get("paidAt")
+
+    can_access_files = (
+        any(file_item.get("fileData") for file_item in delivery_files)
+        and (payment_status == "paid" or role == "freelancer")
+    )
+
+    return {
+        "id": str(communication.get("_id")),
+        "sprintId": str(communication.get("_id")),
+        "sprintNumber": delivery_sequence,
+        "title": f"Sprint {delivery_sequence or 1}",
+        "price": _delivery_amount(communication, job_sprint),
+        "status": payment_status,
+        "paymentStatus": payment_status,
+        "deliveryMessage": str(communication.get("message", "")).strip() or str((job_sprint or {}).get("deliveryMessage", "")).strip(),
+        "deliveryFiles": delivery_files,
+        "deliveredAt": delivered_at,
+        "deliveredAtLabel": _format_relative_time(delivered_at) if delivered_at else "",
+        "submittedAtLabel": _format_relative_time(delivered_at) if delivered_at else "",
+        "paidAt": paid_at,
+        "paidAtLabel": _format_relative_time(paid_at) if paid_at else None,
+        "requestedAmount": _safe_float(communication.get("requestedAmount"), 0),
+        "approvedAmount": _safe_float(communication.get("approvedAmount"), 0),
+        "canAccessFiles": can_access_files,
+    }
 
 
 def create_sprint(db, proposal_id: str):
@@ -145,29 +247,12 @@ def get_sprints_for_proposal(db, proposal_id: str):
     if not existing_job:
         return jsonify({"errors": {"proposalId": "Active task not found"}}), 404
 
-    sprints = []
-    for sprint in db["Sprint"].find({"proposalId": proposal_id}).sort("sprintNumber", 1):
-        files = _serialize_delivery_files(sprint.get("deliveryFiles"))
-        paid_at = sprint.get("paidAt")
-        is_paid = sprint.get("paymentStatus") == "paid"
-
-        if role == "client" and not is_paid:
-            for f in files:
-                f.pop("fileData", None)
-
-        sprints.append({
-            "id": str(sprint.get("_id")),
-            "sprintNumber": sprint.get("sprintNumber"),
-            "price": sprint.get("price"),
-            "status": sprint.get("paymentStatus", "unpaid"),
-            "paymentStatus": sprint.get("paymentStatus", "unpaid"),
-            "deliveryMessage": sprint.get("deliveryMessage", ""),
-            "deliveryFiles": files,
-            "deliveredAtLabel": _format_relative_time(sprint.get("deliveredAt")),
-            "paidAtLabel": _format_relative_time(paid_at) if paid_at else None,
-            "revisionRequestMessage": sprint.get("revisionRequestMessage", ""),
-            "revisionRequestedAtLabel": _format_relative_time(sprint.get("revisionRequestedAt")) if sprint.get("revisionRequestedAt") else None,
-        })
+    sprints = [
+        _build_delivery_sprint_response(communication, existing_job, role)
+        for communication in db["MyJobCommunication"]
+        .find({"proposalId": proposal_id, "eventType": "delivery"})
+        .sort([("deliverySequence", 1), ("createdAt", 1)])
+    ]
 
     return jsonify(sprints), 200
 
@@ -193,38 +278,28 @@ def get_sprints_by_filters(db):
     else:
         freelancer_id = user_id
 
-    query = {"projectId": project_id}
+    query = {"projectId": project_id, "eventType": "delivery"}
     if client_id:
         query["clientId"] = client_id
     if freelancer_id:
         query["freelancerId"] = freelancer_id
-        
+
+    user_field = "clientId" if role == "client" else "freelancerId"
+    jobs_by_proposal = {
+        str(job.get("proposalId", "")): job
+        for job in db[_authorized_job_collection(role)].find(
+            {"status": "active", "projectId": project_id, user_field: user_id}
+        )
+    }
+
     sprints = []
-    for sprint in db["Sprint"].find(query).sort("sprintNumber", 1):
-        files = _serialize_delivery_files(sprint.get("deliveryFiles"))
-        paid_at = sprint.get("paidAt")
-        is_paid = sprint.get("paymentStatus") == "paid"
-
-        if role == "client" and not is_paid:
-            for f in files:
-                f.pop("fileData", None)
-
-        sprints.append({
-            "id": str(sprint.get("_id")),
-            "sprintId": str(sprint.get("_id")),
-            "sprintNumber": sprint.get("sprintNumber"),
-            "title": f"Sprint {sprint.get('sprintNumber')}",
-            "price": sprint.get("price"),
-            "status": sprint.get("paymentStatus", "unpaid"),
-            "paymentStatus": sprint.get("paymentStatus", "unpaid"),
-            "deliveryMessage": sprint.get("deliveryMessage", ""),
-            "deliveryFiles": files,
-            "deliveredAt": sprint.get("deliveredAt"),
-            "deliveredAtLabel": _format_relative_time(sprint.get("deliveredAt")),
-            "paidAt": paid_at,
-            "paidAtLabel": _format_relative_time(paid_at) if paid_at else None,
-            "canAccessFiles": is_paid or role == "freelancer",
-        })
+    communications = db["MyJobCommunication"].find(query).sort([("deliverySequence", 1), ("createdAt", 1)])
+    for communication in communications:
+        proposal_id = str(communication.get("proposalId", "")).strip()
+        existing_job = jobs_by_proposal.get(proposal_id)
+        if not existing_job:
+            continue
+        sprints.append(_build_delivery_sprint_response(communication, existing_job, role))
 
     return jsonify(sprints), 200
 
@@ -245,21 +320,36 @@ def pay_sprint(db, sprint_id: str):
     except Exception:
         return jsonify({"errors": {"sprintId": "Invalid sprint id"}}), 400
 
-    sprint = db["Sprint"].find_one({"_id": sprint_obj_id})
-    if not sprint:
+    communication = db["MyJobCommunication"].find_one({"_id": sprint_obj_id, "eventType": "delivery"})
+    if not communication:
         return jsonify({"errors": {"sprintId": "Sprint not found"}}), 404
 
-    proposal_id = sprint.get("proposalId")
+    proposal_id = str(communication.get("proposalId", "")).strip()
+    if not proposal_id:
+        return jsonify({"errors": {"proposalId": "Sprint is missing a proposal reference"}}), 400
+
     job = _load_authorized_job(db, proposal_id, user_id, role)
     if not job:
         return jsonify({"errors": {"proposalId": "Active task not found for this sprint"}}), 404
 
-    if sprint.get("paymentStatus") == "paid":
+    sprint_number = _safe_int(communication.get("deliverySequence"), 0)
+    job_sprints = list(job.get("sprints") or [])
+    sprint_index = next(
+        (
+            index
+            for index, item in enumerate(job_sprints)
+            if _safe_int(item.get("sprintNumber"), 0) == sprint_number
+        ),
+        -1,
+    )
+    job_sprint = job_sprints[sprint_index] if sprint_index >= 0 else None
+
+    if _delivery_status(communication, job_sprint) == "paid":
         return jsonify({"errors": {"paymentStatus": "Sprint already paid"}}), 400
 
-    amount_to_pay = sprint.get("price", 0)
+    amount_to_pay = _delivery_amount(communication, job_sprint)
     if amount_to_pay <= 0:
-        return jsonify({"errors": {"price": "Sprint has invalid price"}}), 400
+        return jsonify({"errors": {"price": "Sprint has no payment amount to release"}}), 400
 
     from Pay import _validate_payment_payload, _charge_credit_card, DEFAULT_CURRENCY as PAY_DEFAULT_CURRENCY
 
@@ -283,19 +373,8 @@ def pay_sprint(db, sprint_id: str):
     charged_at = charge_result["chargedAt"]
     card = charge_result["card"]
 
-    sprint_update = db["Sprint"].update_one(
-        {"_id": sprint_obj_id},
-        {"$set": {"paymentStatus": "paid", "paidAt": charged_at}}
-    )
-
-    # Also update the corresponding MyJobCommunication delivery record to reflect payment
-    sprint_number = sprint.get("sprintNumber")
     db["MyJobCommunication"].update_one(
-        {
-            "proposalId": proposal_id,
-            "eventType": "delivery",
-            "deliverySequence": sprint_number
-        },
+        {"_id": sprint_obj_id},
         {
             "$set": {
                 "approvedAmount": amount,
@@ -305,6 +384,15 @@ def pay_sprint(db, sprint_id: str):
         }
     )
 
+    if sprint_index >= 0:
+        updated_sprint = dict(job_sprint or {})
+        updated_sprint["status"] = "paid"
+        updated_sprint["paymentStatus"] = "paid"
+        updated_sprint["paidAt"] = charged_at
+        updated_sprint["price"] = amount
+        updated_sprint["updatedAt"] = charged_at
+        job_sprints[sprint_index] = updated_sprint
+
     current_total_paid = _safe_float(job.get("totalPaidAmount"), 0)
     new_total_paid = round(current_total_paid + amount, 2)
     contract_amount = _safe_float(job.get("contractAmount"), 0)
@@ -312,6 +400,7 @@ def pay_sprint(db, sprint_id: str):
     new_workflow = "completed" if remaining <= 0 else "in-progress"
 
     update_job_payload = {
+        "sprints": job_sprints,
         "totalPaidAmount": new_total_paid,
         "remainingBudgetAmount": remaining,
         "latestDeliveryStatus": "paid",
@@ -331,11 +420,11 @@ def pay_sprint(db, sprint_id: str):
     db["PaymentHistory"].insert_one({
         "paymentType": "myjob-release",
         "proposalId": proposal_id,
-        "projectId": sprint.get("projectId", ""),
+        "projectId": communication.get("projectId", ""),
         "clientId": user_id,
-        "freelancerId": sprint.get("freelancerId", ""),
+        "freelancerId": communication.get("freelancerId", "") or job.get("freelancerId", ""),
         "projectTitle": job.get("projectTitle", ""),
-        "deliverySequence": sprint.get("sprintNumber", 0),
+        "deliverySequence": sprint_number,
         "sprintId": sprint_id,
         "cardId": str(card["_id"]),
         "cardLast4": charge_result["last4"],
@@ -346,7 +435,7 @@ def pay_sprint(db, sprint_id: str):
     })
 
     db["EarningFreelancer"].update_one(
-        {"proposalId": proposal_id, "freelancerId": sprint.get("freelancerId", "")},
+        {"proposalId": proposal_id, "freelancerId": job.get("freelancerId", "")},
         {
             "$set": {
                 "projectTitle": job.get("projectTitle", ""),
@@ -361,7 +450,7 @@ def pay_sprint(db, sprint_id: str):
             "$push": {
                 "payments": {
                     "amount": amount,
-                    "sprintNumber": sprint.get("sprintNumber", 0),
+                    "sprintNumber": sprint_number,
                     "sprintId": sprint_id,
                     "paidAt": charged_at,
                     "cardLast4": charge_result["last4"],
@@ -377,13 +466,14 @@ def pay_sprint(db, sprint_id: str):
         job,
         "payment",
         "client",
-        message=f"Payment released for Sprint #{sprint.get('sprintNumber')}.",
+        message=f"Payment released for Sprint #{sprint_number}.",
         approved_amount=amount,
-        delivery_sequence=sprint.get("sprintNumber", 0),
+        delivery_sequence=sprint_number,
+        payment_type="paid",
     )
 
     return jsonify({
-        "message": f"Payment for Sprint #{sprint.get('sprintNumber')} released successfully.",
+        "message": f"Payment for Sprint #{sprint_number} released successfully.",
         "payment": {
             "amount": amount,
             "currency": str(job.get("currency") or PAY_DEFAULT_CURRENCY).strip() or PAY_DEFAULT_CURRENCY,
@@ -418,20 +508,19 @@ def complete_project(db, proposal_id: str):
 
     now = _now_utc()
 
-    sprints_cursor = db["Sprint"].find({"proposalId": proposal_id}).sort("sprintNumber", 1)
     sprints_list = []
-    for sprint in sprints_cursor:
+    for sprint in sorted(existing_job.get("sprints", []) or [], key=lambda item: _safe_int(item.get("sprintNumber"), 0)):
         sprint_files = _serialize_delivery_files(sprint.get("deliveryFiles", []))
         sprints_list.append({
-            "sprintNumber": sprint.get("sprintNumber"),
-            "price": sprint.get("price"),
-            "paymentStatus": sprint.get("paymentStatus"),
+            "sprintNumber": _safe_int(sprint.get("sprintNumber"), 0),
+            "price": _safe_float(sprint.get("price"), 0),
+            "paymentStatus": _normalize_payment_status(sprint.get("paymentStatus") or sprint.get("status")),
             "deliveryMessage": sprint.get("deliveryMessage", ""),
             "deliveryFiles": [
                 {"fileName": f.get("fileName"), "mimeType": f.get("mimeType"), "sizeBytes": f.get("sizeBytes")}
                 for f in sprint_files
             ],
-            "deliveredAt": sprint.get("deliveredAt"),
+            "deliveredAt": sprint.get("submittedAt") or sprint.get("deliveredAt"),
             "paidAt": sprint.get("paidAt"),
         })
 
@@ -450,7 +539,7 @@ def complete_project(db, proposal_id: str):
         "createdAt": now,
     }
 
-    db["ProjectHistory"].insert_one(project_history_doc)
+    history_result = db["ProjectHistory"].insert_one(project_history_doc)
 
     db["MyJobClient"].delete_many({"proposalId": proposal_id})
     db["MyJobFreelancer"].delete_many({"proposalId": proposal_id})
@@ -462,6 +551,6 @@ def complete_project(db, proposal_id: str):
 
     return jsonify({
         "message": "Project completed successfully and moved to history.",
-        "historyId": str(project_history_doc.get("_id")),
+        "historyId": str(history_result.inserted_id),
     }), 200
 

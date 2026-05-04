@@ -108,7 +108,7 @@ def deliver_myjob_assets(db, proposal_id):
     delivery_message = str(data.get("deliveryMessage", "")).strip()
     delivery_files = _serialize_delivery_files(data.get("deliveryFiles"))
     requested_amount = _safe_float(data.get("requestedAmount"), 0)
-    payment_type = (data.get("paymentType") or "").strip().lower()
+    payment_type = "unpaid"
 
     if not user_id:
         return jsonify({"errors": {"userId": "User id is required"}}), 400
@@ -116,10 +116,8 @@ def deliver_myjob_assets(db, proposal_id):
         return jsonify({"errors": {"role": "Only freelancers can deliver project assets"}}), 403
     if not delivery_files:
         return jsonify({"errors": {"deliveryFiles": "Please attach at least one delivery file"}}), 400
-    if payment_type not in {"paid", "unpaid"}:
-        return jsonify({"errors": {"paymentType": "Payment type must be 'paid' or 'unpaid'"}}), 400
-    if payment_type == "paid" and requested_amount <= 0:
-        return jsonify({"errors": {"requestedAmount": "Paid deliveries must include a requested release amount"}}), 400
+    if requested_amount < 0:
+        return jsonify({"errors": {"requestedAmount": "Requested amount cannot be negative"}}), 400
 
     total_bytes = sum(_estimate_data_url_size(item.get("fileData")) for item in delivery_files)
     if total_bytes > MAX_DELIVERY_BYTES:
@@ -166,6 +164,10 @@ def deliver_myjob_assets(db, proposal_id):
 
     _sync_job_update(db, proposal_id, {
         "sprints": sprints,
+        "latestRequestedAmount": requested_amount,
+        "latestPaymentType": payment_type,
+        "latestDeliveryStatus": "submitted",
+        "latestDeliveryIsNew": True,
         "hasUnreadClientUpdate": True,
         "hasUnreadFreelancerUpdate": False,
         "lastCommunicationType": "delivery",
@@ -180,7 +182,7 @@ def deliver_myjob_assets(db, proposal_id):
         "freelancer",
         message=delivery_message,
         files=delivery_files,
-        requested_amount=requested_amount if payment_type == "paid" else 0,
+        requested_amount=requested_amount,
         delivery_sequence=len(sprints),
         payment_type=payment_type,
     )
@@ -193,7 +195,7 @@ def deliver_myjob_assets(db, proposal_id):
         "deliverySubmittedAtLabel": _format_relative_time(now),
         "deliverySequence": len(sprints),
         "progressIncrementCount": len(sprints),
-        "latestRequestedAmount": requested_amount if payment_type == "paid" else 0,
+        "latestRequestedAmount": requested_amount,
         "latestPaymentType": payment_type,
         "latestDeliveryStatus": "submitted",
         "hasUnreadClientUpdate": True,

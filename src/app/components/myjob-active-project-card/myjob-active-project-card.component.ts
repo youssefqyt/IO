@@ -5,7 +5,7 @@ export type MyjobWorkflowStatus = 'in-progress' | 'in-review' | 'completed';
 
 export interface MyjobDeliveryFile {
   fileName: string;
-  fileData: string;
+  fileData?: string;
   mimeType?: string;
   sizeBytes?: number;
 }

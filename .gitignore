@@ -65,6 +65,10 @@ yarn-error.log
 testem.log
 /typings
 
+# Python
+__pycache__/
+*.pyc
+
 # System files
 .DS_Store
 Thumbs.db
